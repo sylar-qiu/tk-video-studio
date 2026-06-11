@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
 """
-Fix category translations: update all categories with proper Chinese translations.
+Fix category translations: update all categories to English（Chinese）.
+
+Usage:
+  python3 scripts/fix-translations.py --db      # direct DB (recommended on server)
+  python3 scripts/fix-translations.py           # via API on :8000
 """
-import json, urllib.request, re, sys
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import urllib.request
+from pathlib import Path
 from urllib.error import HTTPError
 
+ROOT = Path(__file__).resolve().parent.parent
+BACKEND = ROOT / "backend"
 API = "http://127.0.0.1:8000/api"
 
 def api(method, path, data=None):
@@ -1107,42 +1119,110 @@ CN = {
     "Shelf Supports": "层板托",
 }
 
-def main():
-    # Get all categories from API
-    cats = api('GET', '/categories')
+def english_key(raw_name: str) -> str:
+    return raw_name.split("（")[0].strip() if "（" in raw_name else raw_name
+
+
+def translated_name(raw_name: str) -> tuple[str | None, str | None]:
+    en = english_key(raw_name)
+    cn = CN.get(en)
+    if not cn:
+        return None, en
+    new_name = f"{en}（{cn}）"
+    if new_name == raw_name:
+        return None, en
+    return new_name, en
+
+
+def remaining_untranslated(names: list[str]) -> list[str]:
+    missing = []
+    for raw_name in names:
+        en = english_key(raw_name)
+        if not CN.get(en):
+            missing.append(en)
+    return missing
+
+
+def fix_via_api() -> int:
+    cats = api("GET", "/categories")
     if not cats:
-        print("Cannot reach API")
-        return
-    
+        print("Cannot reach API at", API)
+        print("Tip: use --db on the server (no running API required).")
+        return 1
+
     flat = flatten(cats)
     updated = 0
     skipped = 0
-    
+
     for c in flat:
-        raw_name = c['name']
-        # Extract English name: strip any existing "（...）" suffix
-        en = raw_name.split('（')[0].strip() if '（' in raw_name else raw_name
-        
-        cn = CN.get(en)
-        if not cn:
-            print(f"  ⚠️ No translation for: {en}")
+        raw_name = c["name"]
+        new_name, en = translated_name(raw_name)
+        if new_name is None:
+            if en and not CN.get(en):
+                print(f"  ⚠️ No translation for: {en}")
             skipped += 1
             continue
-        
-        new_name = f"{en}（{cn}）"
-        if new_name == raw_name:
-            skipped += 1
-            continue
-        
-        result = api('PATCH', f"/categories/{c['id']}", {"name": new_name})
+
+        result = api("PATCH", f"/categories/{c['id']}", {"name": new_name})
         if result:
             print(f"  ✅ [{c['id']}] {raw_name} → {new_name}")
             updated += 1
         else:
             print(f"  ❌ [{c['id']}] {raw_name} → FAILED")
-    
-    print(f"\nDone! Updated: {updated}, Skipped: {skipped}")
-    print(f"Remaining untranslated: {[e for e, cn in [(c['name'].split('（')[0].strip() if '（' in c['name'] else c['name'], CN.get(c['name'].split('（')[0].strip() if '（' in c['name'] else c['name'])) for c in flat] if not cn]}")
+            return 1
 
-if __name__ == '__main__':
-    main()
+    print(f"\nDone! Updated: {updated}, Skipped: {skipped}")
+    missing = remaining_untranslated([c["name"] for c in flat])
+    print(f"Remaining untranslated: {missing}")
+    return 0
+
+
+def fix_via_db() -> int:
+    sys.path.insert(0, str(BACKEND))
+    from database import SessionLocal
+    from models import ProductCategory
+
+    db = SessionLocal()
+    updated = 0
+    skipped = 0
+    try:
+        cats = db.query(ProductCategory).order_by(ProductCategory.id).all()
+        if not cats:
+            print("No categories in database.")
+            return 1
+
+        print(f"Found {len(cats)} categories in database.")
+        for cat in cats:
+            raw_name = cat.name
+            new_name, en = translated_name(raw_name)
+            if new_name is None:
+                if en and not CN.get(en):
+                    print(f"  ⚠️ No translation for: {en}")
+                skipped += 1
+                continue
+            print(f"  ✅ [{cat.id}] {raw_name} → {new_name}")
+            cat.name = new_name
+            updated += 1
+
+        db.commit()
+        print(f"\nDone! Updated: {updated}, Skipped: {skipped}")
+        missing = remaining_untranslated([c.name for c in cats])
+        print(f"Remaining untranslated: {missing}")
+        return 0
+    finally:
+        db.close()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Apply Chinese translations to category names")
+    parser.add_argument(
+        "--db",
+        action="store_true",
+        help="Update studio.db directly (use on server; does not need API)",
+    )
+    args = parser.parse_args()
+    return fix_via_db() if args.db else fix_via_api()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
