@@ -1151,6 +1151,34 @@ a {
   margin: 0;
 }
 
+.upload-modal-files {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  background: #0f1117;
+  font-size: 13px;
+}
+
+.upload-modal-files li {
+  padding: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-modal-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.upload-modal-submit {
+  width: 100%;
+}
+
 .asset-card video, .asset-card img {
   width: 100%;
   aspect-ratio: 9/16;
@@ -3158,8 +3186,8 @@ a {
 }
 .category-tree-toggle {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3185,7 +3213,6 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
-  line-height: 1.5;
 }
 .category-tree-badge {
   flex-shrink: 0;
@@ -3202,7 +3229,7 @@ a {
   transition: opacity 0.12s;
   font-size: 15px;
   line-height: 1;
-  padding: 4px 8px;
+  padding: 1px 5px;
   color: #7d8491;
 }
 .category-tree-addchild:hover {
@@ -3215,7 +3242,6 @@ a {
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.12s;
-  padding: 4px 0 4px 4px;
 }
 .category-tree-item:hover .category-tree-delete {
   opacity: 1;
