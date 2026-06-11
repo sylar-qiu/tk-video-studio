@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useConfirm } from '../hooks/useConfirm'
 import { api, formatDuration, type ConcatProject } from '../api'
-import { parseScriptsTab, scriptsListPath, type ScriptsTab } from '../utils/scriptsNav'
+import { parseScriptsTab, type ScriptsTab } from '../utils/scriptsNav'
 
 function formatUpdatedAt(iso: string): string {
   const d = new Date(iso)
