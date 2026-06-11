@@ -69,7 +69,6 @@ export default function LoginPage() {
             className="input"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="WJ-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             autoComplete="off"
             autoFocus
             disabled={submitting}
