@@ -44,7 +44,6 @@ export default function ShotsPage() {
         productId,
         tag: tagFilter || undefined,
         name: nameFilter || undefined,
-        taggedOnly: true,
         readyOnly: true,
       })
       .then(setShots)
@@ -165,7 +164,7 @@ export default function ShotsPage() {
 
       {visibleShots.length === 0 ? (
         <div className="empty">
-          {hasFilter ? '没有符合筛选条件的分镜' : '暂无分镜。上传视频后拆解片段，并至少添加一个标签。'}
+          {hasFilter ? '没有符合筛选条件的分镜' : '暂无分镜。上传视频后拆解片段即可出现在这里。'}
         </div>
       ) : (
         <div className="shot-library-grid">

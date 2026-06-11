@@ -367,7 +367,6 @@ export default function ScriptEditorPage() {
       productId,
       tag: tagFilter || undefined,
       name: nameFilter || undefined,
-      taggedOnly: true,
       readyOnly: true,
     })
     setPickerShots(list)
@@ -378,7 +377,7 @@ export default function ScriptEditorPage() {
     async (id: number) => {
       const [project, allShots] = await Promise.all([
         api.getProject(id),
-        api.listShots({ taggedOnly: true, readyOnly: true }),
+        api.listShots({ readyOnly: true }),
       ])
       const audio = audioStateFromProject(project)
       if (project.source === 'batch') {
@@ -527,7 +526,7 @@ export default function ScriptEditorPage() {
         setCurrentProject(updated)
         setProjectName(updated.name)
         if (updated.source === 'batch' && updated.scenes?.length) {
-          const allShots = await api.listShots({ taggedOnly: true, readyOnly: true })
+          const allShots = await api.listShots({ readyOnly: true })
           setScenes(apiScenesToState(updated.scenes, allShots))
         }
         navigate(`/scripts/${updated.id}?tab=${isBatch ? 'batch' : 'manual'}`, { replace: true })
@@ -1336,9 +1335,8 @@ export default function ScriptEditorPage() {
               ? '勾选加入当前场景备选，取消勾选则移除'
               : '勾选添加到时间轴末尾，取消勾选则移除'}
           </p>
-          <div className="shot-picker-panel">
-            <div className="shot-picker-filters">
-            <label className="shots-library-filter">
+          <div className="shot-picker-filters">
+            <div className="shots-library-filter">
               <FilterSelect
                 value={productFilter}
                 onChange={setProductFilter}
@@ -1355,8 +1353,8 @@ export default function ScriptEditorPage() {
                   })),
                 ]}
               />
-            </label>
-            <label className="shots-library-filter">
+            </div>
+            <div className="shots-library-filter">
               <FilterSelect
                 value={nameFilter}
                 onChange={setNameFilter}
@@ -1373,8 +1371,8 @@ export default function ScriptEditorPage() {
                   })),
                 ]}
               />
-            </label>
-            <label className="shots-library-filter">
+            </div>
+            <div className="shots-library-filter">
               <FilterSelect
                 value={tagFilter}
                 onChange={setTagFilter}
@@ -1391,8 +1389,9 @@ export default function ScriptEditorPage() {
                   })),
                 ]}
               />
-            </label>
             </div>
+          </div>
+          <div className="shot-picker-panel">
             <div className="shot-picker-list">
               {pickerShots.length === 0 ? (
                 <div className="empty shot-picker-empty">

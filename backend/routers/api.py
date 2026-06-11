@@ -426,7 +426,7 @@ def list_shot_names(
     for s in _apply_shot_library_filters(
         shots,
         ready_only=True,
-        tagged_only=True,
+        tagged_only=False,
         tag=tag,
         product_id=product_id,
         name=None,

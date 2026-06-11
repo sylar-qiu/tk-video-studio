@@ -5,6 +5,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+STOP="$ROOT/deploy/stop-prod.sh"
+if [[ -f "$STOP" ]]; then
+  echo "Stopping any existing instance on port 8000..."
+  bash "$STOP" --quiet || bash "$STOP" || true
+fi
+
 PY="$ROOT/.venv/bin/python"
 NPM="$(command -v npm || true)"
 

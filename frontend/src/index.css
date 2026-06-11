@@ -1779,7 +1779,9 @@ a {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .concat-sidebar h3 {
@@ -2472,14 +2474,18 @@ a {
   border-radius: 8px;
   background: #0f1117;
   overflow: hidden;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .shot-picker-filters {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px;
-  border-bottom: 1px solid #2a2f3a;
+  margin-top: 8px;
+  flex-shrink: 0;
 }
 
 .shot-picker-filters .shots-library-filter {
@@ -2532,12 +2538,17 @@ a {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  max-height: 240px;
+  max-height: 280px;
   overflow-y: auto;
   border: 1px solid #2a2f3a;
   border-radius: 8px;
   background: #161a22;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.filter-select-menu--portal {
+  z-index: 1100;
+  overflow-y: auto;
 }
 
 .filter-select-option {
@@ -2563,12 +2574,8 @@ a {
 }
 
 .shot-picker-list {
-  max-height: calc(100vh - 360px);
-  overflow-y: auto;
-}
-
-.shot-picker-list {
-  max-height: calc(100vh - 360px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
