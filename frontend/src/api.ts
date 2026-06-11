@@ -24,6 +24,21 @@ export interface ShotNameInfo {
   video_count: number
 }
 
+export interface SystemInfo {
+  config_path: string | null
+  data_dir: string
+  backend_host: string
+  backend_port: number
+  frontend_host: string
+  frontend_port: number
+  ffmpeg: string | null
+  ffprobe: string | null
+  platform: string
+  python: string
+  ffmpeg_resolved: string | null
+  ffprobe_resolved: string | null
+}
+
 export interface Asset {
   id: number
   product_id: number | null
@@ -271,6 +286,7 @@ export const api = {
   getAssetStream: (id: number) => `/api/assets/${id}/stream`,
 
   listTags: () => request<TagInfo[]>('/api/tags'),
+  getSystemInfo: () => request<SystemInfo>('/api/system/info'),
   createTag: (name: string) =>
     request<{ name: string }>('/api/tags', {
       method: 'POST',

@@ -1,131 +1,152 @@
-# TK Video Studio — 跨平台部署规范
+# TK Video Studio — 部署与配置
 
-本文件描述在 **macOS** 与 **Windows** 上部署与运维的统一约定。两端使用同一套代码，差异仅来自操作系统与可选环境变量。
+## 配置放在哪？
+
+| 类型 | 方式 | 示例 |
+|------|------|------|
+| **基础设施**（数据目录、端口、FFmpeg） | 部署时：`studio.config.json` | `data_dir: /data/tk-video-studio` |
+| **业务设置**（类目、标签） | Web → 设置 | 已在应用内 |
+
+**建议：数据目录等在服务器部署时配置，不要放进 Web 可编辑设置。**
+
+原因：应用启动就要读写 SQLite 和媒体文件；路径若可在 Web 里改，存在安全风险，且数据库本身就在数据目录里，形成「鸡生蛋」问题。Web 里提供 **设置 → 系统信息** 只读展示，便于核对是否生效。
+
+---
+
+## 配置文件
+
+项目根目录（与 `start.py` 同级）：
+
+```
+studio.config.json          # 实际配置（不提交 git，每台机器一份）
+studio.config.example.json  # 本地开发模板（data_dir: "data"）
+studio.config.server.example.json  # Ubuntu 服务器模板
+```
+
+加载顺序：
+
+1. `studio.config.local.json`（可选，机器级覆盖，不提交 git）
+2. `studio.config.json`
+3. 环境变量覆盖同名项（容器 / systemd 用）
+
+也可指定：`STUDIO_CONFIG=/path/to/config.json`
+
+### 本地开发（Mac / Windows）
+
+```bash
+cp studio.config.example.json studio.config.json
+# 默认 data_dir 为 "data" → 项目内 data/ 目录
+python3 start.py --check
+```
+
+### Ubuntu 服务器
+
+```bash
+cd /projects/tk-video-studio
+chmod +x deploy/init-server-config.sh
+./deploy/init-server-config.sh
+# 会复制 studio.config.server.example.json → studio.config.json
+# 并创建 /data/tk-video-studio
+
+# 可按需编辑
+nano studio.config.json
+
+python3 start.py --check
+python3 start.py
+```
+
+`studio.config.server.example.json` 内容要点：
+
+```json
+{
+  "data_dir": "/data/tk-video-studio",
+  "backend": { "host": "0.0.0.0", "port": 8000 },
+  "frontend": { "host": "0.0.0.0", "port": 5173 }
+}
+```
+
+## 数据目录 `data_dir` 优先级
+
+1. 环境变量 `TK_DATA_DIR`
+2. `studio.config.json` 里的 `data_dir`
+3. **未配置时的平台默认：**
+   - Linux → `/data/tk-video-studio`
+   - Windows → `C:/data/tk-video-studio`
+   - macOS → 项目内 `data/`（相对路径）
+
+部署时可显式写进 `studio.config.json` 覆盖默认值。Web 不提供修改入口，仅在 **设置 → 系统信息** 只读展示。
+
+---
+
+## 环境变量（可选覆盖）
+
+| 变量 | 对应配置 |
+|------|----------|
+| `TK_DATA_DIR` | `data_dir` |
+| `TK_BACKEND_HOST` / `TK_BACKEND_PORT` | `backend.*` |
+| `TK_FRONTEND_HOST` / `TK_FRONTEND_PORT` | `frontend.*` |
+| `TK_FFMPEG` / `TK_FFPROBE` | `ffmpeg.*` |
+| `STUDIO_CONFIG` | 配置文件路径 |
+
+---
 
 ## 环境要求
 
-| 组件 | 版本 | macOS | Windows |
-|------|------|-------|---------|
-| Python | 3.9+ | `brew install python` 或系统自带 | [python.org](https://www.python.org/downloads/) 安装时勾选 **Add to PATH** |
-| Node.js | 18+ | `brew install node` | [nodejs.org](https://nodejs.org/) LTS |
-| FFmpeg | 含 ffprobe | `brew install ffmpeg` | `winget install Gyan.FFmpeg` 或 `choco install ffmpeg` |
-
-安装后在新终端验证：
-
-```bash
-python start.py --check
-```
-
-或访问 `http://127.0.0.1:8000/api/health`，应返回 `ffmpeg` / `ffprobe` 路径及 `platform` 字段。
-
-## 一键启动
-
-| 平台 | 命令 |
+| 组件 | 版本 |
 |------|------|
-| 任意 | `python start.py` |
-| macOS / Linux | `./start.sh` |
-| Windows 双击 | `start.bat` |
-| Windows PowerShell | `.\start.ps1` |
+| Python | 3.9+ |
+| Node.js | 18+ |
+| FFmpeg | 含 ffprobe |
 
-默认地址：
-
-- 前端：http://127.0.0.1:5173
-- 后端：http://127.0.0.1:8000
-
-## 目录与数据存储
-
-所有媒体与数据库均在项目下的 `data/`（可通过环境变量改位置）：
-
-```
-data/
-├── studio.db      # SQLite 元数据
-├── raw/           # 原片上传
-├── clips/         # 分镜片段
-├── thumbs/        # 缩略图
-├── exports/       # 导出成片（占用最大）
-├── previews/      # 脚本预览缓存
-├── bgm/           # 背景音乐
-└── proxy/         # 历史预览代理（可忽略）
-```
-
-### 路径规范（代码层）
-
-1. **磁盘路径**：一律使用 `pathlib.Path`，禁止手写 `\` 或 `/` 拼接。
-2. **入库相对路径**：相对 `data/` 且 **始终用正斜杠**，例如 `clips/shot_12.mp4`（见 `backend/paths.py`）。
-3. **SQLite URL**：使用 `DB_PATH.as_posix()`，避免 Windows 反斜杠破坏连接串。
-4. **FFmpeg concat 列表**：使用 `ffmpeg_safe_path()` / `as_posix()`，Windows 盘符路径写成 `C:/...` 形式。
-
-Mac 上开发的 `data/` **可直接拷贝**到 Windows 同路径下使用（或设置 `TK_DATA_DIR` 指向拷贝目录），无需改库内路径。
-
-## 环境变量（可选）
-
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `TK_DATA_DIR` | 数据根目录（库 + 所有媒体） | `D:\tk-video-data` |
-| `TK_ROOT` | 项目根（一般无需设置） | — |
-| `TK_FFMPEG` | ffmpeg 可执行文件路径 | `C:\ffmpeg\bin\ffmpeg.exe` |
-| `TK_FFPROBE` | ffprobe 可执行文件路径 | `C:\ffmpeg\bin\ffprobe.exe` |
-| `TK_BACKEND_HOST` / `TK_BACKEND_PORT` | 后端监听 | 默认 `127.0.0.1:8000` |
-| `TK_FRONTEND_HOST` / `TK_FRONTEND_PORT` | 前端 dev 端口 | 默认 `127.0.0.1:5173` |
-
-Windows 若数据盘与系统盘分离，推荐：
-
-```powershell
-setx TK_DATA_DIR "D:\tk-video-studio\data"
-```
-
-重启终端后再 `python start.py`。
-
-## 手动启动（生产 / 调试）
-
-**后端**
+Ubuntu：
 
 ```bash
-# macOS / Linux
-source .venv/bin/activate
-cd backend && uvicorn main:app --host 0.0.0.0 --port 8000
-
-# Windows
-.venv\Scripts\activate
-cd backend
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+sudo apt install -y python3 python3-venv python3-pip git ffmpeg nodejs npm
 ```
 
-**前端开发**
+---
+
+## 验证
 
 ```bash
-cd frontend && npm install && npm run dev
+python3 start.py --check
+curl http://127.0.0.1:8000/api/system/info
 ```
 
-**前端生产构建**（仅静态资源，仍需后端 API）
+Web：**设置 → 系统信息** 查看当前 `data_dir`、配置文件路径、FFmpeg 是否解析成功。
 
-```bash
-cd frontend && npm run build
-# 将 dist/ 用任意静态服务器托管，并反向代理 /api → 后端
+---
+
+## 数据目录结构
+
+```
+{data_dir}/
+├── studio.db
+├── raw/
+├── clips/
+├── thumbs/
+├── exports/
+├── previews/
+└── bgm/
 ```
 
-## Mac ↔ Windows 迁移清单
+Mac 的 `data/` 拷到服务器 `/data/tk-video-studio/` 即可迁移，库内为相对路径，无需改库。
 
-1. 复制整个 `data/` 目录（或设置相同的 `TK_DATA_DIR`）。
-2. 在新机器安装 Python、Node、FFmpeg，执行 `python start.py --check`。
-3. 首次启动会自动跑数据库迁移（`backend/migrate.py`）。
-4. 确认 `/api/health` 中 `ffmpeg` 非 null。
+---
 
-## 存储占用说明
+## systemd 示例
 
-- 成片目录 `data/exports/` 通常占绝大部分空间；删除导出任务时会删对应文件，但历史 orphan 文件需定期清理。
-- 原片 + 分镜相对较小；批量生成会快速增大 `exports/`。
+见 `deploy/tk-video-studio.service.example`。配置写在 `studio.config.json` 即可，一般不必在 unit 里重复 `Environment=`。
+
+---
 
 ## 常见问题
 
-**Windows：ffmpeg 找不到**  
-将 FFmpeg 的 `bin` 加入系统 PATH，或设置 `TK_FFMPEG` / `TK_FFPROBE`。
+**未创建 studio.config.json**  
+仍可使用内置默认：`data_dir = 项目/data/`，仅适合本地开发。
 
-**Windows：时区 / 相对时间异常**  
-项目已依赖 `tzdata`（见 `requirements.txt`）；重新 `pip install -r backend/requirements.txt`。
+**修改配置后不生效**  
+重启 `python start.py` 或 systemd 服务；`--reload` 不监听配置文件变更。
 
-**拼接/export 失败且路径含中文或空格**  
-媒体文件名在入库时已 UUID 化；若仍失败，检查 concat 日志，确保路径为 POSIX 形式（已在 `paths.py` 处理）。
-
-**端口被占用**  
-修改 `TK_BACKEND_PORT` / `TK_FRONTEND_PORT`，并同步改 `frontend/vite.config.ts` 中 proxy 目标（或通过环境配置）。
+**Windows 数据盘**  
+`"data_dir": "D:/tk-video-data"` 或 `"D:\\\\tk-video-data"`（JSON 内转义）。

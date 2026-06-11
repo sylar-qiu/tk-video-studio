@@ -1,4 +1,4 @@
-"""Locate ffmpeg/ffprobe on macOS, Linux, and Windows."""
+"""Locate ffmpeg/ffprobe from studio config, env, or PATH."""
 
 from __future__ import annotations
 
@@ -8,11 +8,15 @@ import sys
 
 
 def ffmpeg_bin() -> str:
-    return os.environ.get("TK_FFMPEG") or "ffmpeg"
+    from settings_loader import get_settings
+
+    return os.environ.get("TK_FFMPEG") or get_settings().ffmpeg or "ffmpeg"
 
 
 def ffprobe_bin() -> str:
-    return os.environ.get("TK_FFPROBE") or "ffprobe"
+    from settings_loader import get_settings
+
+    return os.environ.get("TK_FFPROBE") or get_settings().ffprobe or "ffprobe"
 
 
 def find_ffmpeg() -> str | None:

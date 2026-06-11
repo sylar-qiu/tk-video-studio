@@ -2,6 +2,8 @@ data/
 __pycache__/
 *.pyc
 .env
+studio.config.json
+studio.config.local.json
 .venv/
 venv/
 node_modules/

@@ -1,0 +1,15 @@
+{
+  "data_dir": "/data/tk-video-studio",
+  "backend": {
+    "host": "0.0.0.0",
+    "port": 8000
+  },
+  "frontend": {
+    "host": "0.0.0.0",
+    "port": 5173
+  },
+  "ffmpeg": {
+    "ffmpeg": null,
+    "ffprobe": null
+  }
+}

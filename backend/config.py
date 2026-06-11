@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
-# Project root (tk-video-studio/). Override with TK_ROOT if needed.
-ROOT = Path(os.environ.get("TK_ROOT", "")).expanduser().resolve() if os.environ.get("TK_ROOT") else Path(__file__).resolve().parent.parent
+from settings_loader import get_settings
 
-# Local media + SQLite. Override with TK_DATA_DIR to put data on another drive (common on Windows).
-_data_override = os.environ.get("TK_DATA_DIR", "").strip()
-DATA_DIR = Path(_data_override).expanduser().resolve() if _data_override else ROOT / "data"
+_settings = get_settings()
+
+ROOT = _settings.root
+DATA_DIR = _settings.data_dir
 
 RAW_DIR = DATA_DIR / "raw"
 PROXY_DIR = DATA_DIR / "proxy"
@@ -18,6 +17,11 @@ EXPORT_DIR = DATA_DIR / "exports"
 PREVIEW_DIR = DATA_DIR / "previews"
 BGM_DIR = DATA_DIR / "bgm"
 DB_PATH = DATA_DIR / "studio.db"
+
+BACKEND_HOST = _settings.backend_host
+BACKEND_PORT = _settings.backend_port
+FRONTEND_HOST = _settings.frontend_host
+FRONTEND_PORT = _settings.frontend_port
 
 FADE_DURATION_SEC = 0.5
 BGM_FADE_OUT_SEC = 3.0

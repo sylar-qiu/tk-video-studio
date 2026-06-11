@@ -289,3 +289,20 @@ class ProjectOut(BaseModel):
     source: Literal["manual", "batch"] = "manual"
     updated_at: ApiDateTime
     created_at: ApiDateTime
+
+
+class SystemInfoOut(BaseModel):
+    """Read-only deployment info (from studio.config.json)."""
+
+    config_path: Optional[str] = None
+    data_dir: str
+    backend_host: str
+    backend_port: int
+    frontend_host: str
+    frontend_port: int
+    ffmpeg: Optional[str] = None
+    ffprobe: Optional[str] = None
+    platform: str
+    python: str
+    ffmpeg_resolved: Optional[str] = None
+    ffprobe_resolved: Optional[str] = None

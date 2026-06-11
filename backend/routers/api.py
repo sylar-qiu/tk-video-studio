@@ -42,6 +42,7 @@ from schemas import (
     TagResourceCounts,
     ShotNameOut,
     TagStatsOut,
+    SystemInfoOut,
     WorkOut,
     WorkReview,
     WorkUpdate,
@@ -198,15 +199,36 @@ def health():
     import sys
 
     from services.ffmpeg_bin import find_ffmpeg, find_ffprobe
+    from settings_loader import get_settings
 
+    settings = get_settings()
     return {
         "ok": True,
         "platform": platform.system(),
         "python": sys.version.split()[0],
         "data_dir": str(DATA_DIR),
+        "config_path": str(settings.config_path) if settings.config_path else None,
         "ffmpeg": find_ffmpeg(),
         "ffprobe": find_ffprobe(),
     }
+
+
+@router.get("/system/info", response_model=SystemInfoOut)
+def system_info():
+    import platform
+    import sys
+
+    from services.ffmpeg_bin import find_ffmpeg, find_ffprobe
+    from settings_loader import get_settings
+
+    pub = get_settings().to_public_dict()
+    return SystemInfoOut(
+        **pub,
+        platform=platform.system(),
+        python=sys.version.split()[0],
+        ffmpeg_resolved=find_ffmpeg(),
+        ffprobe_resolved=find_ffprobe(),
+    )
 
 
 @router.post("/assets/upload", response_model=AssetOut)

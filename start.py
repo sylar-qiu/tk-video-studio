@@ -24,12 +24,14 @@ BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIR = ROOT / "frontend"
 VENV_DIR = ROOT / ".venv"
 
-BACKEND_HOST = os.environ.get("TK_BACKEND_HOST", "127.0.0.1")
-BACKEND_PORT = int(os.environ.get("TK_BACKEND_PORT", "8000"))
-FRONTEND_HOST = os.environ.get("TK_FRONTEND_HOST", "127.0.0.1")
-FRONTEND_PORT = int(os.environ.get("TK_FRONTEND_PORT", "5173"))
-
 IS_WINDOWS = sys.platform == "win32"
+
+
+def load_studio_settings():
+    sys.path.insert(0, str(BACKEND_DIR))
+    from settings_loader import get_settings
+
+    return get_settings()
 
 
 def venv_python() -> Path:
@@ -97,8 +99,9 @@ def check_environment() -> int:
     print(f"ffmpeg:       {ffmpeg or 'NOT FOUND'}")
     print(f"ffprobe:      {ffprobe or 'NOT FOUND'}")
 
-    data_dir = os.environ.get("TK_DATA_DIR") or str(ROOT / "data")
-    print(f"Data dir:     {data_dir}")
+    settings = load_studio_settings()
+    print(f"Config file:  {settings.config_path or '(none — using defaults, see studio.config.example.json)'}")
+    print(f"Data dir:     {settings.data_dir}")
 
     ok = bool(node and npm and ffmpeg and ffprobe)
     if ok:
@@ -119,6 +122,12 @@ def main() -> int:
     py = ensure_venv()
     ensure_frontend_deps()
 
+    settings = load_studio_settings()
+    backend_host = settings.backend_host
+    backend_port = settings.backend_port
+    frontend_host = settings.frontend_host
+    frontend_port = settings.frontend_port
+
     backend_cmd = [
         str(py),
         "-m",
@@ -126,9 +135,9 @@ def main() -> int:
         "main:app",
         "--reload",
         "--host",
-        BACKEND_HOST,
+        backend_host,
         "--port",
-        str(BACKEND_PORT),
+        str(backend_port),
     ]
     frontend_cmd = [
         shutil.which("npm") or "npm",
@@ -136,9 +145,9 @@ def main() -> int:
         "dev",
         "--",
         "--host",
-        FRONTEND_HOST,
+        frontend_host,
         "--port",
-        str(FRONTEND_PORT),
+        str(frontend_port),
     ]
 
     procs: list[subprocess.Popen] = []
@@ -160,29 +169,28 @@ def main() -> int:
         signal.signal(signal.SIGINT, shutdown)
         signal.signal(signal.SIGTERM, shutdown)
 
-    print(f"Starting backend  http://{BACKEND_HOST}:{BACKEND_PORT}")
+    print(f"Starting backend  http://{backend_host}:{backend_port}")
     procs.append(
         subprocess.Popen(backend_cmd, cwd=BACKEND_DIR, env=os.environ.copy())
     )
 
-    health_url = f"http://{BACKEND_HOST}:{BACKEND_PORT}/api/health"
+    health_url = f"http://{backend_host}:{backend_port}/api/health"
     print("Waiting for backend...")
     if wait_http(health_url):
         print("Backend ready.")
     else:
         print("Warning: backend not ready within 30s, starting frontend anyway.", file=sys.stderr)
 
-    print(f"Starting frontend http://{FRONTEND_HOST}:{FRONTEND_PORT}")
+    print(f"Starting frontend http://{frontend_host}:{frontend_port}")
     procs.append(
         subprocess.Popen(frontend_cmd, cwd=FRONTEND_DIR, env=os.environ.copy())
     )
 
-    data_dir = os.environ.get("TK_DATA_DIR") or str(ROOT / "data")
     print()
     print("TK Video Studio 已启动")
-    print(f"  前端: http://{FRONTEND_HOST}:{FRONTEND_PORT}")
-    print(f"  API:  http://{BACKEND_HOST}:{BACKEND_PORT}/docs")
-    print(f"  数据: {data_dir}")
+    print(f"  前端: http://{frontend_host}:{frontend_port}")
+    print(f"  API:  http://{backend_host}:{backend_port}/docs")
+    print(f"  数据: {settings.data_dir}")
     print()
     print("按 Ctrl+C 停止")
 

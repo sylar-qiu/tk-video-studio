@@ -1,0 +1,15 @@
+{
+  "data_dir": "data",
+  "backend": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "frontend": {
+    "host": "127.0.0.1",
+    "port": 5173
+  },
+  "ffmpeg": {
+    "ffmpeg": null,
+    "ffprobe": null
+  }
+}
