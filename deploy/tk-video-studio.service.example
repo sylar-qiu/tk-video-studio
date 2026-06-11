@@ -7,7 +7,8 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/projects/tk-video-studio
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-ExecStart=/projects/tk-video-studio/deploy/start-prod.sh
+# --foreground：由 systemd 托管进程，勿在脚本内再 fork 后台
+ExecStart=/projects/tk-video-studio/deploy/start-prod.sh --foreground
 Restart=on-failure
 RestartSec=10
 

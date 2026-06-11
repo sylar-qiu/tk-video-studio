@@ -6,6 +6,22 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PORT=8000
 BACKEND_DIR="$ROOT/backend"
 VENV_PY="$ROOT/.venv/bin/python"
+PY="$VENV_PY"
+
+pid_file() {
+  if [[ ! -x "$PY" ]]; then
+    return 0
+  fi
+  local data_dir
+  data_dir="$(cd "$ROOT" && "$PY" - <<'PY' 2>/dev/null)
+import sys
+sys.path.insert(0, "backend")
+from settings_loader import get_settings
+print(get_settings().data_dir)
+PY
+)" || true
+  [[ -n "$data_dir" ]] && echo "${data_dir}/logs/tk-video-studio.pid"
+}
 
 QUIET=0
 if [[ "${1:-}" == "--quiet" ]]; then
@@ -51,7 +67,16 @@ while read -r pid; do
   fi
 done < <(lsof -ti :"$PORT" -sTCP:LISTEN 2>/dev/null || true)
 
+PID_FILE="$(pid_file || true)"
+if [[ ${#PIDS[@]} -eq 0 && -n "${PID_FILE:-}" && -f "$PID_FILE" ]]; then
+  pid_from_file="$(cat "$PID_FILE" 2>/dev/null || true)"
+  if [[ -n "$pid_from_file" ]] && is_studio_uvicorn "$pid_from_file"; then
+    PIDS=("$pid_from_file")
+  fi
+fi
+
 if [[ ${#PIDS[@]} -eq 0 ]]; then
+  rm -f "${PID_FILE:-}"
   log "No tk-video-studio process found on port ${PORT}."
   exit 0
 fi
@@ -79,4 +104,5 @@ for pid in "${PIDS[@]}"; do
   fi
 done
 
+rm -f "${PID_FILE:-}"
 log "Stopped."

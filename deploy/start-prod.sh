@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
-# 生产环境长期运行：构建前端 + 单端口 8000 提供页面与 API
+# 生产环境：构建前端 + 后台启动 uvicorn（8000），SSH 断开仍继续运行
+# 用法:
+#   ./deploy/start-prod.sh              # 后台守护进程（默认）
+#   ./deploy/start-prod.sh --foreground # 前台运行（systemd 用）
 set -euo pipefail
+
+FOREGROUND=0
+if [[ "${1:-}" == "--foreground" ]]; then
+  FOREGROUND=1
+fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -52,16 +60,51 @@ if [[ "$HOST" == "127.0.0.1" || "$HOST" == "localhost" ]]; then
 fi
 PORT=8000
 
-echo "Starting TK Video Studio (production)"
-echo "  URL:  http://${HOST}:${PORT}/"
-echo "  API:  http://${HOST}:${PORT}/docs"
-echo "  Data: $("$PY" - <<'PY'
+DATA_DIR="$("$PY" - <<'PY'
 import sys
 sys.path.insert(0, "backend")
 from settings_loader import get_settings
 print(get_settings().data_dir)
 PY
 )"
+LOG_DIR="$DATA_DIR/logs"
+mkdir -p "$LOG_DIR"
+PID_FILE="$LOG_DIR/tk-video-studio.pid"
+LOG_FILE="$LOG_DIR/tk-video-studio.log"
+
+echo "Starting TK Video Studio (production)"
+echo "  URL:  http://${HOST}:${PORT}/"
+echo "  API:  http://${HOST}:${PORT}/docs"
+echo "  Data: ${DATA_DIR}"
 
 cd "$ROOT/backend"
-exec "$PY" -m uvicorn main:app --host "$HOST" --port "$PORT"
+
+if [[ "$FOREGROUND" == 1 ]]; then
+  exec "$PY" -m uvicorn main:app --host "$HOST" --port "$PORT"
+fi
+
+echo "  Log:  ${LOG_FILE}"
+echo "  Mode: background (SSH 断开不影响)"
+
+# 新会话 + 脱离终端，避免 SSH 断开时收到 SIGHUP
+if command -v setsid >/dev/null 2>&1; then
+  setsid nohup "$PY" -m uvicorn main:app --host "$HOST" --port "$PORT" >>"$LOG_FILE" 2>&1 </dev/null &
+else
+  nohup "$PY" -m uvicorn main:app --host "$HOST" --port "$PORT" >>"$LOG_FILE" 2>&1 </dev/null &
+fi
+
+SERVER_PID=$!
+echo "$SERVER_PID" >"$PID_FILE"
+disown "$SERVER_PID" 2>/dev/null || true
+
+sleep 1
+if kill -0 "$SERVER_PID" 2>/dev/null; then
+  echo "Started (PID ${SERVER_PID})."
+  echo "Stop: ./deploy/stop-prod.sh"
+  echo "Tail log: tail -f ${LOG_FILE}"
+else
+  echo "Error: server failed to start. Last log lines:" >&2
+  tail -n 30 "$LOG_FILE" >&2 || true
+  rm -f "$PID_FILE"
+  exit 1
+fi
