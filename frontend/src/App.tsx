@@ -15,7 +15,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="logo">TK Video Studio</div>
+        <div className="logo">WantJoin tk video studio</div>
         <nav className="nav">
           <NavLink to="/products">产品</NavLink>
           <NavLink to="/" end>素材上传</NavLink>
