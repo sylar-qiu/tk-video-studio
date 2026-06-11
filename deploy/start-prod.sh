@@ -7,7 +7,7 @@ cd "$ROOT"
 
 STOP="$ROOT/deploy/stop-prod.sh"
 if [[ -f "$STOP" ]]; then
-  echo "Stopping any existing instance on port 8000..."
+  echo "Stopping any existing tk-video-studio instance (port 8000 only)..."
   bash "$STOP" --quiet || bash "$STOP" || true
 fi
 
