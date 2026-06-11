@@ -3140,21 +3140,17 @@ a {
 
 .category-tree {
   list-style: none;
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 .category-tree-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-left: calc(var(--depth, 0) * 28px);
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  margin-left: calc(var(--depth, 0) * 24px);
   transition: background 0.1s;
 }
 .category-tree-item:hover {
