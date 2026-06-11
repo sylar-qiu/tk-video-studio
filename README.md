@@ -31,7 +31,7 @@ python start.py --check
 python start.py
 ```
 
-浏览器：**http://127.0.0.1:5173**（端口以 `studio.config.json` 为准）
+浏览器：**http://127.0.0.1:8000/**（本地与生产均为单端口 8000，页面 + API）
 
 ## 目录结构
 
@@ -54,7 +54,7 @@ tk-video-studio/
 | macOS，未配置 | 项目内 `data/` |
 | 部署显式配置 | `studio.config.json` → `data_dir` 或 `TK_DATA_DIR` |
 
-Web **设置 → 系统信息** 仅只读查看，不可修改。
+Web **设置** 中管理类目与标签。
 
 ## 生产部署（Ubuntu 长期运行）
 

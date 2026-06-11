@@ -158,7 +158,7 @@ def load_settings(*, root: Path | None = None, reload: bool = False) -> StudioSe
     )
     backend_port = _env_int("TK_BACKEND_PORT", int(backend.get("port") or 8000))
     frontend_host = os.environ.get("TK_FRONTEND_HOST", "").strip() or str(frontend.get("host") or "127.0.0.1")
-    frontend_port = _env_int("TK_FRONTEND_PORT", int(frontend.get("port") or 5173))
+    frontend_port = _env_int("TK_FRONTEND_PORT", int(frontend.get("port") or 8000))
     ffmpeg = os.environ.get("TK_FFMPEG", "").strip() or ffmpeg_cfg.get("ffmpeg")
     ffprobe = os.environ.get("TK_FFPROBE", "").strip() or ffmpeg_cfg.get("ffprobe")
     invite_codes = _resolve_invite_codes(merged)

@@ -61,7 +61,7 @@ python3 start.py
 {
   "data_dir": "/data/tk-video-studio",
   "backend": { "host": "0.0.0.0", "port": 8000 },
-  "frontend": { "host": "0.0.0.0", "port": 5173 }
+  "frontend": { "host": "0.0.0.0", "port": 8000 }
 }
 ```
 
@@ -74,7 +74,7 @@ python3 start.py
    - Windows → `C:/data/tk-video-studio`
    - macOS → 项目内 `data/`（相对路径）
 
-部署时可显式写进 `studio.config.json` 覆盖默认值。Web 不提供修改入口，仅在 **设置 → 系统信息** 只读展示。
+部署时可显式写进 `studio.config.json` 覆盖默认值。
 
 ---
 
@@ -143,8 +143,15 @@ chmod +x deploy/start-prod.sh
 ./deploy/start-prod.sh
 ```
 
-浏览器访问：**http://\<服务器IP\>:8000/**  
-（不再使用 5173 开发端口）
+浏览器访问：**http://\<服务器IP\>:8000/**
+
+### 本地开发（同样单端口 8000）
+
+```bash
+python3 start.py
+```
+
+访问 **http://127.0.0.1:8000/**，与生产环境一致。后端改代码自动重载；前端改代码后需重新构建（或 `python3 start.py` 重启）。仅调试 UI 热更新时，可另开 `cd frontend && npm run dev`（5173，高级用法）。
 
 ### systemd 开机自启
 
@@ -163,8 +170,6 @@ sudo systemctl status tk-video-studio
 cd /projects/tk-video-studio && git pull
 sudo systemctl restart tk-video-studio
 ```
-
-开发调试仍用：`python3 start.py`（5173 + 8000，热重载）。
 
 ---
 

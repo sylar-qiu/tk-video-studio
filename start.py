@@ -2,8 +2,9 @@
 """Cross-platform launcher for TK Video Studio (macOS / Linux / Windows).
 
 Usage:
-  python start.py          # dev mode: backend + Vite frontend
-  python start.py --check  # verify Python, Node, FFmpeg, directories
+  python start.py              # build frontend + serve UI & API on port 8000
+  python start.py --skip-build # restart backend only (reuse frontend/dist)
+  python start.py --check      # verify Python, Node, FFmpeg, directories
 """
 
 from __future__ import annotations
@@ -114,6 +115,11 @@ def check_environment() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Start TK Video Studio")
     parser.add_argument("--check", action="store_true", help="Verify dependencies only")
+    parser.add_argument(
+        "--skip-build",
+        action="store_true",
+        help="Skip frontend build (faster restart when only backend changed)",
+    )
     args = parser.parse_args()
 
     if args.check:
@@ -125,8 +131,11 @@ def main() -> int:
     settings = load_studio_settings()
     backend_host = settings.backend_host
     backend_port = settings.backend_port
-    frontend_host = settings.frontend_host
-    frontend_port = settings.frontend_port
+    npm = shutil.which("npm") or "npm"
+
+    if not args.skip_build:
+        print("Building frontend...")
+        run([npm, "run", "build"], cwd=FRONTEND_DIR)
 
     backend_cmd = [
         str(py),
@@ -138,16 +147,6 @@ def main() -> int:
         backend_host,
         "--port",
         str(backend_port),
-    ]
-    frontend_cmd = [
-        shutil.which("npm") or "npm",
-        "run",
-        "dev",
-        "--",
-        "--host",
-        frontend_host,
-        "--port",
-        str(frontend_port),
     ]
 
     procs: list[subprocess.Popen] = []
@@ -169,7 +168,7 @@ def main() -> int:
         signal.signal(signal.SIGINT, shutdown)
         signal.signal(signal.SIGTERM, shutdown)
 
-    print(f"Starting backend  http://{backend_host}:{backend_port}")
+    print(f"Starting TK Video Studio on http://{backend_host}:{backend_port}")
     procs.append(
         subprocess.Popen(backend_cmd, cwd=BACKEND_DIR, env=os.environ.copy())
     )
@@ -177,18 +176,13 @@ def main() -> int:
     health_url = f"http://{backend_host}:{backend_port}/api/health"
     print("Waiting for backend...")
     if wait_http(health_url):
-        print("Backend ready.")
+        print("Ready.")
     else:
-        print("Warning: backend not ready within 30s, starting frontend anyway.", file=sys.stderr)
-
-    print(f"Starting frontend http://{frontend_host}:{frontend_port}")
-    procs.append(
-        subprocess.Popen(frontend_cmd, cwd=FRONTEND_DIR, env=os.environ.copy())
-    )
+        print("Warning: service not ready within 30s.", file=sys.stderr)
 
     print()
     print("TK Video Studio 已启动")
-    print(f"  前端: http://{frontend_host}:{frontend_port}")
+    print(f"  访问: http://{backend_host}:{backend_port}/")
     print(f"  API:  http://{backend_host}:{backend_port}/docs")
     print(f"  数据: {settings.data_dir}")
     print()
