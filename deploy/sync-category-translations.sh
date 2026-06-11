@@ -5,12 +5,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-PY="${PY:-python3}"
+PY="$ROOT/.venv/bin/python"
 SCRIPT="$ROOT/scripts/fix-translations.py"
 
 if [[ ! -f "$SCRIPT" ]]; then
   echo "Missing $SCRIPT — run: git pull" >&2
   exit 1
+fi
+
+if [[ ! -x "$PY" ]]; then
+  echo "Creating virtualenv..."
+  python3 -m venv "$ROOT/.venv"
+  "$PY" -m pip install -q --upgrade pip
+  "$PY" -m pip install -q -r "$ROOT/backend/requirements.txt"
 fi
 
 echo "Syncing category translations (direct DB)…"
