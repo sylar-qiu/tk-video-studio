@@ -2813,40 +2813,6 @@ a {
   background: #2a3142;
 }
 
-.system-settings-hint {
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
-
-.system-settings-hint code {
-  font-size: 13px;
-}
-
-.system-settings-dl {
-  margin: 0;
-}
-
-.system-settings-row {
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 8px 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid #2a2f3a;
-}
-
-.system-settings-row dt {
-  margin: 0;
-  color: #aeb4bf;
-  font-size: 14px;
-}
-
-.system-settings-row dd {
-  margin: 0;
-  font-size: 14px;
-  word-break: break-all;
-}
-
 .tags-stats-table {
   overflow-x: auto;
 }
