@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { acquireBodyScrollLock } from '../utils/scrollLock'
 
 interface ModalProps {
   open: boolean
@@ -21,19 +22,21 @@ export default function Modal({
   closeOnBackdrop = true,
   closeOnEscape = true,
 }: ModalProps) {
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEscape) onClose()
+      if (e.key === 'Escape' && closeOnEscape) onCloseRef.current()
     }
     window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const releaseScroll = acquireBodyScrollLock()
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+      releaseScroll()
     }
-  }, [open, onClose, closeOnEscape])
+  }, [open, closeOnEscape])
 
   if (!open) return null
 
