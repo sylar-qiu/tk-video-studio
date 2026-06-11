@@ -16,6 +16,7 @@ if [[ ! -f "$CONFIG" ]]; then
   fi
 else
   echo "Config already exists: $CONFIG"
+  "$ROOT/deploy/ensure-auth-config.py"
 fi
 
 DATA_DIR="$(python3 - <<PY

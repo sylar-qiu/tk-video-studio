@@ -28,6 +28,8 @@ fi
 echo "Building frontend..."
 (cd "$ROOT/frontend" && npm run build)
 
+"$PY" "$ROOT/deploy/ensure-auth-config.py"
+
 read -r HOST PORT <<< "$("$PY" - <<'PY'
 import sys
 sys.path.insert(0, "backend")

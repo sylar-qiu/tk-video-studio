@@ -16,7 +16,7 @@ function AppShell() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="logo">WJ Studio</div>
+        <div className="logo">WJ Video Studio</div>
         <nav className="nav">
           <NavLink to="/products">产品</NavLink>
           <NavLink to="/" end>素材上传</NavLink>

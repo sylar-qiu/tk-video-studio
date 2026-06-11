@@ -58,7 +58,7 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1 className="login-title">WantJoin tk video studio</h1>
+        <h1 className="login-title">WJ Video Studio</h1>
         <p className="login-muted">请输入邀请码以继续访问</p>
         <form className="login-form" onSubmit={handleSubmit}>
           <label className="label" htmlFor="invite-code">
