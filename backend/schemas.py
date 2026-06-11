@@ -302,6 +302,7 @@ class SystemInfoOut(BaseModel):
     frontend_port: int
     ffmpeg: Optional[str] = None
     ffprobe: Optional[str] = None
+    auth_required: bool = False
     platform: str
     python: str
     ffmpeg_resolved: Optional[str] = None

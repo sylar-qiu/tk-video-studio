@@ -24,6 +24,8 @@ class StudioSettings:
     frontend_port: int
     ffmpeg: str | None
     ffprobe: str | None
+    invite_codes: tuple[str, ...]
+    auth_secret: str | None
 
     def to_public_dict(self) -> dict[str, Any]:
         """Fields safe to expose in API / web UI (read-only)."""
@@ -36,6 +38,7 @@ class StudioSettings:
             "frontend_port": self.frontend_port,
             "ffmpeg": self.ffmpeg,
             "ffprobe": self.ffprobe,
+            "auth_required": bool(self.invite_codes),
         }
 
 
@@ -104,6 +107,32 @@ def _env_int(name: str, default: int) -> int:
     return int(raw)
 
 
+def _resolve_invite_codes(merged: dict[str, Any]) -> tuple[str, ...]:
+    env = os.environ.get("TK_INVITE_CODES", "").strip()
+    if env:
+        return tuple(code.strip() for code in env.split(",") if code.strip())
+
+    auth = merged.get("auth") or {}
+    raw = auth.get("invite_codes") or []
+    if isinstance(raw, str):
+        return tuple(code.strip() for code in raw.split(",") if code.strip())
+    if isinstance(raw, list):
+        return tuple(str(code).strip() for code in raw if str(code).strip())
+    return ()
+
+
+def _resolve_auth_secret(merged: dict[str, Any]) -> str | None:
+    env = os.environ.get("TK_AUTH_SECRET", "").strip()
+    if env:
+        return env
+    auth = merged.get("auth") or {}
+    secret = auth.get("secret")
+    if secret is None:
+        return None
+    value = str(secret).strip()
+    return value or None
+
+
 def load_settings(*, root: Path | None = None, reload: bool = False) -> StudioSettings:
     global _settings
     if _settings is not None and not reload:
@@ -132,6 +161,8 @@ def load_settings(*, root: Path | None = None, reload: bool = False) -> StudioSe
     frontend_port = _env_int("TK_FRONTEND_PORT", int(frontend.get("port") or 5173))
     ffmpeg = os.environ.get("TK_FFMPEG", "").strip() or ffmpeg_cfg.get("ffmpeg")
     ffprobe = os.environ.get("TK_FFPROBE", "").strip() or ffmpeg_cfg.get("ffprobe")
+    invite_codes = _resolve_invite_codes(merged)
+    auth_secret = _resolve_auth_secret(merged)
 
     _settings = StudioSettings(
         root=root,
@@ -143,6 +174,8 @@ def load_settings(*, root: Path | None = None, reload: bool = False) -> StudioSe
         frontend_port=frontend_port,
         ffmpeg=str(ffmpeg).strip() if ffmpeg else None,
         ffprobe=str(ffprobe).strip() if ffprobe else None,
+        invite_codes=invite_codes,
+        auth_secret=auth_secret,
     )
     return _settings
 

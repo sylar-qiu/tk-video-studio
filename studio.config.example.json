@@ -11,5 +11,8 @@
   "ffmpeg": {
     "ffmpeg": null,
     "ffprobe": null
+  },
+  "auth": {
+    "invite_codes": []
   }
 }

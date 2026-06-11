@@ -11,5 +11,19 @@
   "ffmpeg": {
     "ffmpeg": null,
     "ffprobe": null
+  },
+  "auth": {
+    "invite_codes": [
+      "WJ-381e79c7338b21895fbd7e7fa0123386",
+      "WJ-3eeef491e70c1c39c49a87929e9b29fa",
+      "WJ-519dfb212794450c0de04cf40795bc5e",
+      "WJ-039137e81d473ec75c7783b9ad2c0c30",
+      "WJ-d3242928cfe529e79fa578cb2428990c",
+      "WJ-6dd8a9ed0efb9d88f4c853615e7f6299",
+      "WJ-01c1adfcd4e1519ab7a7ca7fae540ebd",
+      "WJ-3b03d7ec77b75e1fa7fd60f0c514ceba",
+      "WJ-5e1c00a350a801fd47180088cbbb0ebe",
+      "WJ-5c0c9c856cb68b6d7a2b5e4b7ea8ee5c"
+    ]
   }
 }

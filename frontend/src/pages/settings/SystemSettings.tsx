@@ -19,6 +19,7 @@ export default function SystemSettings() {
     { label: '配置文件', value: info.config_path ?? '（未找到，使用内置默认值）' },
     { label: '视频数据目录', value: info.data_dir },
     { label: '后端地址', value: `${info.backend_host}:${info.backend_port}` },
+    { label: '邀请码登录', value: info.auth_required ? '已启用' : '未启用' },
     { label: '前端 dev 地址', value: `${info.frontend_host}:${info.frontend_port}` },
     { label: '运行平台', value: info.platform },
     { label: 'Python', value: info.python },

@@ -937,6 +937,53 @@ a {
   cursor: not-allowed;
 }
 
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #0f1117;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border-radius: 12px;
+  border: 1px solid #2a2f3a;
+  background: #151922;
+}
+
+.login-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: #ff6b6b;
+}
+
+.login-muted {
+  margin: 0 0 24px;
+  color: #aeb4bf;
+  font-size: 14px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-submit {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.login-error {
+  margin: 0;
+  color: #ff8787;
+  font-size: 13px;
+}
+
 .input, .select, textarea {
   width: 100%;
   padding: 8px 10px;

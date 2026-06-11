@@ -10,12 +10,13 @@ import WorksPage from './pages/WorksPage'
 import ExportsPage from './pages/ExportsPage'
 import ProductsPage from './pages/ProductsPage'
 import SettingsPage from './pages/SettingsPage'
+import LoginPage, { AuthGate } from './pages/LoginPage'
 
-export default function App() {
+function AppShell() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="logo">WantJoin tk video studio</div>
+        <div className="logo">WJ Studio</div>
         <nav className="nav">
           <NavLink to="/products">产品</NavLink>
           <NavLink to="/" end>素材上传</NavLink>
@@ -48,5 +49,21 @@ export default function App() {
         </Routes>
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/*"
+        element={
+          <AuthGate>
+            <AppShell />
+          </AuthGate>
+        }
+      />
+    </Routes>
   )
 }

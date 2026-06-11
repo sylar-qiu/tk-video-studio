@@ -33,10 +33,16 @@ export interface SystemInfo {
   frontend_port: number
   ffmpeg: string | null
   ffprobe: string | null
+  auth_required: boolean
   platform: string
   python: string
   ffmpeg_resolved: string | null
   ffprobe_resolved: string | null
+}
+
+export interface AuthStatus {
+  required: boolean
+  authenticated: boolean
 }
 
 export interface Asset {
@@ -186,10 +192,22 @@ export interface ScriptScene {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
+  const res = await fetch(url, { credentials: 'include', ...init })
+  if (res.status === 401 && !url.includes('/api/auth/')) {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
+  }
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(text || res.statusText)
+    let message = text || res.statusText
+    try {
+      const parsed = JSON.parse(text) as { detail?: string }
+      if (parsed.detail) message = parsed.detail
+    } catch {
+      /* keep raw text */
+    }
+    throw new Error(message)
   }
   return res.json()
 }
@@ -261,6 +279,18 @@ export function formatMs(ms: number): string {
 }
 
 export const api = {
+  authStatus: () => request<AuthStatus>('/api/auth/status'),
+  verifyInvite: (code: string) =>
+    request<{ ok: boolean; required: boolean }>('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    }),
+  logout: () =>
+    request<{ ok: boolean }>('/api/auth/logout', {
+      method: 'POST',
+    }),
+
   listAssets: (opts?: { productId?: number; tag?: string }) => {
     const params = new URLSearchParams()
     if (opts?.productId != null) params.set('product_id', String(opts.productId))
@@ -373,7 +403,11 @@ export const api = {
   uploadProjectBgm: async (id: number, file: File) => {
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch(`/api/projects/${id}/bgm`, { method: 'POST', body: form })
+    const res = await fetch(`/api/projects/${id}/bgm`, {
+      method: 'POST',
+      body: form,
+      credentials: 'include',
+    })
     if (!res.ok) {
       const text = await res.text()
       throw new Error(text || res.statusText)
@@ -384,7 +418,11 @@ export const api = {
   uploadBgmTrack: async (file: File) => {
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch('/api/bgm', { method: 'POST', body: form })
+    const res = await fetch('/api/bgm', {
+      method: 'POST',
+      body: form,
+      credentials: 'include',
+    })
     if (!res.ok) {
       const text = await res.text()
       throw new Error(text || res.statusText)

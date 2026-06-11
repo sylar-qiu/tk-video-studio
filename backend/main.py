@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from migrate import run_migrations
 from frontend_static import mount_frontend
-from routers import api, products
+from middleware.auth import AuthMiddleware
+from routers import api, auth, products
 
 run_migrations()
 
@@ -16,7 +17,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AuthMiddleware)
 
+app.include_router(auth.router)
 app.include_router(api.router)
 app.include_router(products.router)
 mount_frontend(app)
