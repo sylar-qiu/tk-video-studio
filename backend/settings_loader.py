@@ -82,6 +82,12 @@ def _platform_default_data_dir() -> str:
     return "data"
 
 
+def _default_backend_host() -> str:
+    if sys.platform == "linux":
+        return "0.0.0.0"
+    return "127.0.0.1"
+
+
 def _resolve_data_dir_raw(merged: dict[str, Any]) -> str:
     override = os.environ.get("TK_DATA_DIR", "").strip()
     if override:
@@ -118,7 +124,9 @@ def load_settings(*, root: Path | None = None, reload: bool = False) -> StudioSe
     ffmpeg_cfg = merged.get("ffmpeg") or {}
 
     data_dir_raw = _resolve_data_dir_raw(merged)
-    backend_host = os.environ.get("TK_BACKEND_HOST", "").strip() or str(backend.get("host") or "127.0.0.1")
+    backend_host = os.environ.get("TK_BACKEND_HOST", "").strip() or str(
+        backend.get("host") or _default_backend_host()
+    )
     backend_port = _env_int("TK_BACKEND_PORT", int(backend.get("port") or 8000))
     frontend_host = os.environ.get("TK_FRONTEND_HOST", "").strip() or str(frontend.get("host") or "127.0.0.1")
     frontend_port = _env_int("TK_FRONTEND_PORT", int(frontend.get("port") or 5173))

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from migrate import run_migrations
+from frontend_static import mount_frontend
 from routers import api, products
 
 run_migrations()
@@ -18,8 +19,4 @@ app.add_middleware(
 
 app.include_router(api.router)
 app.include_router(products.router)
-
-
-@app.get("/")
-def root():
-    return {"service": "tk-video-studio", "docs": "/docs"}
+mount_frontend(app)

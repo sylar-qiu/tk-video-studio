@@ -55,3 +55,14 @@ tk-video-studio/
 | 部署显式配置 | `studio.config.json` → `data_dir` 或 `TK_DATA_DIR` |
 
 Web **设置 → 系统信息** 仅只读查看，不可修改。
+
+## 生产部署（Ubuntu 长期运行）
+
+单端口 **8000**（页面 + API）：
+
+```bash
+chmod +x deploy/start-prod.sh
+./deploy/start-prod.sh
+```
+
+开机自启见 `deploy/tk-video-studio.service.example` 与 [DEPLOY.md](./DEPLOY.md)。

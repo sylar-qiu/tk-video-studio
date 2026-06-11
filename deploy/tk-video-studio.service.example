@@ -1,15 +1,15 @@
 [Unit]
-Description=TK Video Studio API
+Description=TK Video Studio (production, port 8000)
 After=network.target
 
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/projects/tk-video-studio/backend
-# 读取 /projects/tk-video-studio/studio.config.json（部署时由 init-server-config.sh 生成）
-ExecStart=/projects/tk-video-studio/.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000
+WorkingDirectory=/projects/tk-video-studio
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/projects/tk-video-studio/deploy/start-prod.sh
 Restart=on-failure
-RestartSec=5
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
