@@ -6,6 +6,7 @@ import TagSelect from '../components/TagSelect'
 import ResourceMetaBreadcrumb from '../components/ResourceMetaBreadcrumb'
 import { useConfirm } from '../hooks/useConfirm'
 import { api, formatDuration, type Asset, type Product, type Shot } from '../api'
+import { findOverlappingShots } from '../utils/shotRange'
 import { thumbImageClass } from '../utils/thumb'
 
 export default function ClipPage() {
@@ -99,6 +100,22 @@ export default function ClipPage() {
       const ok = await confirm({
         title: '修改产品归属',
         message: '您修改了片段的产品归属，原则上不允许。是否继续？',
+        confirmLabel: '继续提取',
+        danger: true,
+      })
+      if (!ok) return
+    }
+    const overlapping = findOverlappingShots(assetShots, startMs, endMs)
+    if (overlapping.length > 0) {
+      const detail = overlapping
+        .map((shot) => {
+          const label = shot.name.trim() || `片段 ${formatDuration(shot.start_ms)}-${formatDuration(shot.end_ms)}`
+          return `· ${label}（${formatDuration(shot.start_ms)} → ${formatDuration(shot.end_ms)}）`
+        })
+        .join('\n')
+      const ok = await confirm({
+        title: '时间段重叠',
+        message: `当前选中区间与以下分镜时间段重叠：\n${detail}\n\n仍要重复提取吗？`,
         confirmLabel: '继续提取',
         danger: true,
       })

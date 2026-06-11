@@ -133,14 +133,16 @@ export default function CreateProductModal({
           />
         </label>
 
-        <label className="field">
+        <div className="field">
           <span className="label">所属类目</span>
           <div className="category-picker" ref={pickerRef}>
             <button
               type="button"
               className={`input category-picker-trigger ${selected ? '' : 'placeholder'}`}
-              onClick={() => setShowTree(!showTree)}
+              onClick={() => setShowTree((open) => !open)}
               disabled={submitting}
+              aria-expanded={showTree}
+              aria-haspopup="listbox"
             >
               {selected ? (
                 <span className="category-picker-selected" title={selected.path}>
@@ -182,8 +184,11 @@ export default function CreateProductModal({
                   visible.map((c) => (
                     <div
                       key={c.id}
+                      role="option"
+                      aria-selected={c.id === categoryId}
                       className={`category-picker-item ${c.id === categoryId ? 'is-selected' : ''}`}
                       style={{ paddingLeft: 12 + c.depth * 20 }}
+                      onClick={() => selectCat(c.id)}
                     >
                       {!search.trim() && (
                         <span
@@ -197,7 +202,7 @@ export default function CreateProductModal({
                         </span>
                       )}
                       {search.trim() && <span className="category-picker-toggle invisible">　</span>}
-                      <span className="category-picker-label" onClick={() => selectCat(c.id)}>
+                      <span className="category-picker-label">
                         {search.trim() ? highlightMatch(c.name, search.trim()) : c.name}
                       </span>
                     </div>
@@ -206,7 +211,7 @@ export default function CreateProductModal({
               </div>
             )}
           </div>
-        </label>
+        </div>
 
         {error && <p className="error modal-form-error">{error}</p>}
       </div>
