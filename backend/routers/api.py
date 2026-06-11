@@ -390,8 +390,11 @@ def create_shot(body: ShotCreate, db: Session = Depends(get_db)):
         raise HTTPException(400, "结束时间必须大于开始时间")
     if body.end_ms > asset.duration_ms:
         raise HTTPException(400, "结束时间超出素材时长")
-    if not body.tags:
-        raise HTTPException(400, "请至少添加一个标签，分镜才会进入素材库")
+    product_id = body.product_id if body.product_id is not None else asset.product_id
+    if not product_id:
+        raise HTTPException(400, "请选择所属产品")
+    if not db.get(Product, product_id):
+        raise HTTPException(400, "产品不存在")
 
     shot = Shot(
         asset_id=body.asset_id,
@@ -399,7 +402,7 @@ def create_shot(body: ShotCreate, db: Session = Depends(get_db)):
         start_ms=body.start_ms,
         end_ms=body.end_ms,
         status="pending",
-        product_id=body.product_id if body.product_id is not None else asset.product_id,
+        product_id=product_id,
         created_at=beijing_now(),
     )
     shot.tags = body.tags

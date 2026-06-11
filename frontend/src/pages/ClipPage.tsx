@@ -5,7 +5,7 @@ import ShotCardMeta from '../components/ShotCardMeta'
 import TagSelect from '../components/TagSelect'
 import ResourceMetaBreadcrumb from '../components/ResourceMetaBreadcrumb'
 import { useConfirm } from '../hooks/useConfirm'
-import { api, formatDuration, type Asset, type Shot } from '../api'
+import { api, formatDuration, type Asset, type Product, type Shot } from '../api'
 import { thumbImageClass } from '../utils/thumb'
 
 export default function ClipPage() {
@@ -16,10 +16,17 @@ export default function ClipPage() {
   const [startMs, setStartMs] = useState(0)
   const [endMs, setEndMs] = useState(0)
   const [name, setName] = useState('')
+  const [products, setProducts] = useState<Product[]>([])
+  const [productId, setProductId] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const inheritedProductIdRef = useRef('')
   const { confirm, ConfirmDialog } = useConfirm()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    api.listProducts().then(setProducts).catch(() => {})
+  }, [])
 
   const loadAsset = useCallback(async (id: number) => {
     const list = await api.listAssets()
@@ -36,6 +43,13 @@ export default function ClipPage() {
     if (!assetId) return
     loadAsset(Number(assetId)).catch((e) => setError(String(e)))
   }, [assetId, loadAsset])
+
+  useEffect(() => {
+    if (!asset) return
+    const pid = String(asset.product_id ?? '')
+    setProductId(pid)
+    inheritedProductIdRef.current = pid
+  }, [asset?.id, asset?.product_id])
 
   const hasExtractingShots = assetShots.some(
     (s) => s.status === 'pending' || s.status === 'processing',
@@ -77,9 +91,18 @@ export default function ClipPage() {
 
   const extract = async () => {
     if (!asset) return
-    if (selectedTags.length === 0) {
-      setError('请至少添加一个标签，分镜才会进入素材库')
+    if (!productId) {
+      setError('请选择所属产品')
       return
+    }
+    if (productId !== inheritedProductIdRef.current) {
+      const ok = await confirm({
+        title: '修改产品归属',
+        message: '您修改了片段的产品归属，原则上不允许。是否继续？',
+        confirmLabel: '继续提取',
+        danger: true,
+      })
+      if (!ok) return
     }
     setLoading(true)
     setError('')
@@ -90,11 +113,15 @@ export default function ClipPage() {
         start_ms: startMs,
         end_ms: endMs,
         tags: selectedTags,
+        product_id: Number(productId),
       })
       setName('')
       setSelectedTags([])
       setStartMs(0)
       setEndMs(asset.duration_ms)
+      const pid = String(asset.product_id ?? '')
+      setProductId(pid)
+      inheritedProductIdRef.current = pid
       await loadAsset(asset.id)
     } catch (e) {
       setError(String(e))
@@ -161,11 +188,28 @@ export default function ClipPage() {
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="可选" />
           </div>
 
+          <label className="field field-product-inherited">
+            <span className="label">所属产品（必填）</span>
+            <select
+              className="input input-inherited-product"
+              value={productId}
+              disabled={loading}
+              onChange={(e) => setProductId(e.target.value)}
+            >
+              <option value="">请选择产品</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <span className="field-hint muted">默认继承原片产品，原则上不可修改</span>
+          </label>
+
           <TagSelect
             value={selectedTags}
             onChange={setSelectedTags}
             disabled={loading}
-            required
           />
 
           <p className="muted">选中区间：{formatDuration(startMs)} → {formatDuration(endMs)}（{formatDuration(endMs - startMs)}）</p>
@@ -174,7 +218,7 @@ export default function ClipPage() {
 
           <button
             className="btn btn-primary"
-            disabled={loading || endMs <= startMs || selectedTags.length === 0}
+            disabled={loading || endMs <= startMs || !productId}
             onClick={extract}
           >
             {loading ? '提取中…' : '提取镜头'}
