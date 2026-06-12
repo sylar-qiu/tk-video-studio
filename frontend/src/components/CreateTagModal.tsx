@@ -5,11 +5,12 @@ import ModalFooter from './ModalFooter'
 
 interface Props {
   open: boolean
+  productId?: number | null
   onClose: () => void
   onCreated: (name: string) => void
 }
 
-export default function CreateTagModal({ open, onClose, onCreated }: Props) {
+export default function CreateTagModal({ open, productId, onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -21,6 +22,10 @@ export default function CreateTagModal({ open, onClose, onCreated }: Props) {
   }, [open])
 
   const handleSubmit = async () => {
+    if (!productId) {
+      setError('请先选择所属产品')
+      return
+    }
     const trimmed = name.trim()
     if (!trimmed) {
       setError('请输入标签名称')
@@ -29,12 +34,12 @@ export default function CreateTagModal({ open, onClose, onCreated }: Props) {
     setSubmitting(true)
     setError('')
     try {
-      const tag = await api.createTag(trimmed)
+      const tag = await api.createTag(trimmed, productId)
       onCreated(tag.name)
       onClose()
     } catch (e) {
       const msg = String(e)
-      setError(msg.includes('409') || msg.includes('已存在') ? '标签已存在' : msg)
+      setError(msg.includes('409') || msg.includes('已存在') ? '该产品下标签已存在' : msg)
     } finally {
       setSubmitting(false)
     }
@@ -59,7 +64,7 @@ export default function CreateTagModal({ open, onClose, onCreated }: Props) {
       }
     >
       <div className="modal-form">
-        <label className="field">
+        <div className="field">
           <span className="label">标签名称</span>
           <input
             className="input"
@@ -72,7 +77,7 @@ export default function CreateTagModal({ open, onClose, onCreated }: Props) {
               if (e.key === 'Enter') void handleSubmit()
             }}
           />
-        </label>
+        </div>
         {error && <p className="error modal-form-error">{error}</p>}
       </div>
     </Modal>

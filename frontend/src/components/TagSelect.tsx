@@ -5,6 +5,7 @@ import CreateTagModal from './CreateTagModal'
 interface Props {
   value: string[]
   onChange: (tags: string[]) => void
+  productId?: number | null
   disabled?: boolean
   label?: string
   required?: boolean
@@ -13,6 +14,7 @@ interface Props {
 export default function TagSelect({
   value,
   onChange,
+  productId = null,
   disabled = false,
   label = '标签',
   required = false,
@@ -21,14 +23,24 @@ export default function TagSelect({
   const [library, setLibrary] = useState<string[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const productIdRef = useRef(productId)
+  productIdRef.current = productId
 
   const loadTags = useCallback(() => {
-    api.listTags().then((rows) => setLibrary(rows.map((t) => t.name))).catch(() => {})
+    const pid = productIdRef.current
+    if (!pid) {
+      setLibrary([])
+      return
+    }
+    api
+      .listTags({ productId: pid })
+      .then((rows) => setLibrary(rows.map((t) => t.name)))
+      .catch(() => setLibrary([]))
   }, [])
 
   useEffect(() => {
     loadTags()
-  }, [loadTags])
+  }, [loadTags, productId])
 
   useEffect(() => {
     if (!open) return
@@ -43,6 +55,7 @@ export default function TagSelect({
   }, [open, loadTags])
 
   const available = library.filter((tag) => !value.includes(tag))
+  const canUseTags = !!productId && !disabled
 
   const addTag = (tag: string) => {
     if (!value.includes(tag)) onChange([...value, tag])
@@ -58,7 +71,7 @@ export default function TagSelect({
   }
 
   const toggleOpen = () => {
-    if (!disabled) setOpen((prev) => !prev)
+    if (canUseTags) setOpen((prev) => !prev)
   }
 
   const labelSuffix = required ? '（必填）' : '（可选）'
@@ -69,9 +82,12 @@ export default function TagSelect({
         {label}
         {labelSuffix}
       </span>
+      {!productId && !disabled && (
+        <p className="muted tag-select-hint">请先选择所属产品</p>
+      )}
       <div className="tag-select-control">
         <div
-          className={`tag-select-input input${open ? ' tag-select-input--open' : ''}${disabled ? ' tag-select-input--disabled' : ''}`}
+          className={`tag-select-input input${open ? ' tag-select-input--open' : ''}${!canUseTags ? ' tag-select-input--disabled' : ''}`}
         >
           {value.map((tag) => (
             <span key={tag} className="tag-select-chip">
@@ -104,24 +120,24 @@ export default function TagSelect({
             <button
               type="button"
               className="tag-select-placeholder"
-              disabled={disabled}
+              disabled={!canUseTags}
               onClick={toggleOpen}
             >
-              选择标签…
+              {productId ? '选择标签…' : '请先选择产品'}
             </button>
           )}
         </div>
         <button
           type="button"
           className="tag-select-toggle"
-          disabled={disabled}
+          disabled={!canUseTags}
           aria-label={open ? '收起标签列表' : '展开标签列表'}
           aria-expanded={open}
           onClick={toggleOpen}
         >
           {open ? '▴' : '▾'}
         </button>
-        {open && !disabled && (
+        {open && canUseTags && (
           <div className="tag-select-menu" role="listbox">
             <button
               type="button"
@@ -153,6 +169,7 @@ export default function TagSelect({
       </div>
       <CreateTagModal
         open={createOpen}
+        productId={productId}
         onClose={() => setCreateOpen(false)}
         onCreated={handleCreated}
       />

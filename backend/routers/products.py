@@ -99,10 +99,10 @@ def create_product(body: ProductCreate, db: Session = Depends(get_db)):
         raise HTTPException(404, "类目不存在")
     product = Product(name=body.name.strip(), category_id=body.category_id)
     product.tags = body.tags
-    if product.tags:
-        ensure_tags(db, product.tags)
     db.add(product)
     db.flush()
+    if product.tags:
+        ensure_tags(db, product.tags, product.id)
     on_product_created(db, product)
     db.commit()
     db.refresh(product)
@@ -123,8 +123,8 @@ def update_product(product_id: int, body: ProductUpdate, db: Session = Depends(g
     if body.tags is not None:
         old_tags = list(product.tags)
         product.tags = body.tags
-        ensure_tags(db, product.tags)
-        on_product_tags_changed(db, old_tags, product.tags)
+        ensure_tags(db, product.tags, product.id)
+        on_product_tags_changed(db, old_tags, product.tags, product)
     db.commit()
     db.refresh(product)
     return product_to_out(product, db)

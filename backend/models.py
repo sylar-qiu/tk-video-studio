@@ -7,7 +7,7 @@ from time_utils import beijing_now
 
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -254,9 +254,13 @@ class BgmTrack(Base):
 
 class Tag(Base):
     __tablename__ = "tags"
+    __table_args__ = (UniqueConstraint("product_id", "name", name="uq_tag_product_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(256), unique=True, index=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    name: Mapped[str] = mapped_column(String(256), index=True)
     count_assets: Mapped[int] = mapped_column(Integer, default=0)
     count_shots: Mapped[int] = mapped_column(Integer, default=0)
     count_exports: Mapped[int] = mapped_column(Integer, default=0)

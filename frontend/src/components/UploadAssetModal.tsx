@@ -213,7 +213,10 @@ export default function UploadAssetModal({
             className="input"
             value={productId}
             disabled={submitting}
-            onChange={(e) => setProductId(e.target.value)}
+            onChange={(e) => {
+              setProductId(e.target.value)
+              setSelectedTags([])
+            }}
           >
             <option value="">请选择产品</option>
             {products.map((p) => (
@@ -227,7 +230,12 @@ export default function UploadAssetModal({
           )}
         </label>
 
-        <TagSelect value={selectedTags} onChange={setSelectedTags} disabled={submitting} />
+        <TagSelect
+          value={selectedTags}
+          onChange={setSelectedTags}
+          productId={productId ? Number(productId) : null}
+          disabled={submitting}
+        />
 
         {error && <p className="error upload-modal-error">{error}</p>}
       </div>

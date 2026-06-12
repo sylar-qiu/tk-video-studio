@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, formatDuration } from '../api'
 import Modal from './Modal'
+import { useVideoSpacebar } from '../utils/videoKeyboard'
 
 interface Props {
   open: boolean
@@ -280,6 +281,32 @@ export default function ConcatPreviewModal({
     setPositionMs(totalMs)
     setPhase('ended')
   }, [pauseMedia, totalMs])
+
+  const togglePreviewPlayback = useCallback(() => {
+    if (phase === 'ready' || phase === 'ended') {
+      void startPlayback()
+      return
+    }
+    if (phase !== 'playing') return
+    const video = videoRef.current
+    if (!video) return
+    if (video.paused) {
+      void video.play()
+      if (bgmEnabled && bgmUrl) void bgmRef.current?.play()
+    } else {
+      pauseMedia()
+    }
+  }, [phase, startPlayback, pauseMedia, bgmEnabled, bgmUrl])
+
+  const phaseRef = useRef(phase)
+  phaseRef.current = phase
+
+  useVideoSpacebar(open, (e) => {
+    const current = phaseRef.current
+    if (current === 'loading' || current === 'error') return
+    e.preventDefault()
+    togglePreviewPlayback()
+  })
 
   const progressPct = totalMs > 0 ? Math.min((positionMs / totalMs) * 100, 100) : 0
 

@@ -42,7 +42,7 @@ export default function ScriptNameModal({
         </ModalFooter>
       }
     >
-      <label className="field">
+      <div className="field">
         <span className="label">脚本名称</span>
         <input
           className="input"
@@ -54,7 +54,7 @@ export default function ScriptNameModal({
             if (e.key === 'Enter') handleConfirm()
           }}
         />
-      </label>
+      </div>
     </Modal>
   )
 }

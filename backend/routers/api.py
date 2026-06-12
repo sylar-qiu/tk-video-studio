@@ -97,9 +97,16 @@ from services.tags import create_tag, ensure_tags, list_tags, tag_exists
 router = APIRouter(prefix="/api")
 
 
-def tag_to_out(tag: Tag) -> TagOut:
+def tag_to_out(tag: Tag, db: Session) -> TagOut:
+    names = product_name_map(db)
     counts = TagResourceCounts(**tag_counts_dict(tag))
-    return TagOut(name=tag.name, counts=counts, videos=tag_video_count(tag))
+    return TagOut(
+        name=tag.name,
+        product_id=tag.product_id,
+        product_name=names.get(tag.product_id),
+        counts=counts,
+        videos=tag_video_count(tag),
+    )
 
 
 def _shot_display_name(name: str) -> str:
@@ -263,7 +270,7 @@ async def upload_asset(
     )
     if tags.strip():
         asset.tags = [t.strip() for t in re.split(r"[,，\s]+", tags.strip()) if t.strip()]
-        ensure_tags(db, asset.tags)
+        ensure_tags(db, asset.tags, product_id)
     db.add(asset)
     db.flush()
     on_asset_created(db, asset)
@@ -309,8 +316,8 @@ def update_asset(asset_id: int, body: AssetUpdate, db: Session = Depends(get_db)
     if body.tags is not None:
         old_tags = list(asset.tags)
         asset.tags = body.tags
-        ensure_tags(db, asset.tags)
-        on_asset_tags_changed(db, old_tags, asset.tags)
+        ensure_tags(db, asset.tags, asset.product_id)
+        on_asset_tags_changed(db, old_tags, asset.tags, asset)
     db.commit()
     db.refresh(asset)
     return asset_to_out(asset, db)
@@ -349,11 +356,17 @@ def stream_asset(asset_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/tags/stats", response_model=list[TagStatsOut])
-def list_tag_stats(db: Session = Depends(get_db)):
-    rows = list_tags(db)
+def list_tag_stats(
+    product_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    rows = list_tags(db, product_id)
+    names = product_name_map(db)
     return [
         TagStatsOut(
             name=tag.name,
+            product_id=tag.product_id,
+            product_name=names.get(tag.product_id),
             counts=TagResourceCounts(**tag_counts_dict(tag)),
             videos=tag_video_count(tag),
             total=sum(tag_counts_dict(tag).values()),
@@ -366,8 +379,11 @@ def list_tag_stats(db: Session = Depends(get_db)):
 
 
 @router.get("/tags", response_model=list[TagOut])
-def list_tags_endpoint(db: Session = Depends(get_db)):
-    return [tag_to_out(tag) for tag in list_tags(db)]
+def list_tags_endpoint(
+    product_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    return [tag_to_out(tag, db) for tag in list_tags(db, product_id)]
 
 
 @router.post("/tags", response_model=TagOut)
@@ -375,10 +391,12 @@ def create_tag_endpoint(body: TagCreate, db: Session = Depends(get_db)):
     name = body.name.strip()
     if not name:
         raise HTTPException(400, "标签名称不能为空")
-    if tag_exists(db, name):
-        raise HTTPException(409, "标签已存在")
-    tag = create_tag(db, name)
-    return tag_to_out(tag)
+    if not db.get(Product, body.product_id):
+        raise HTTPException(404, "产品不存在")
+    if tag_exists(db, name, body.product_id):
+        raise HTTPException(409, "该产品下标签已存在")
+    tag = create_tag(db, name, body.product_id)
+    return tag_to_out(tag, db)
 
 
 @router.post("/shots", response_model=ShotOut)
@@ -406,7 +424,7 @@ def create_shot(body: ShotCreate, db: Session = Depends(get_db)):
         created_at=beijing_now(),
     )
     shot.tags = body.tags
-    ensure_tags(db, shot.tags)
+    ensure_tags(db, shot.tags, product_id)
     db.add(shot)
     db.commit()
     db.refresh(shot)
@@ -483,13 +501,13 @@ def update_shot(shot_id: int, body: ShotUpdate, db: Session = Depends(get_db)):
     old_status = shot.status
     if body.name is not None:
         shot.name = body.name
-    if body.tags is not None:
-        shot.tags = body.tags
-        ensure_tags(db, shot.tags)
     if body.product_id is not None:
         if body.product_id and not db.get(Product, body.product_id):
             raise HTTPException(404, "产品不存在")
         shot.product_id = body.product_id
+    if body.tags is not None:
+        shot.tags = body.tags
+        ensure_tags(db, shot.tags, shot.product_id)
     on_shot_updated(
         db,
         old_name=old_name,
@@ -809,7 +827,7 @@ def update_export(job_id: int, body: ExportUpdate, db: Session = Depends(get_db)
     if body.tags is not None:
         old_tags = list(job.tags)
         job.tags = body.tags
-        ensure_tags(db, job.tags)
+        ensure_tags(db, job.tags, job.product_id)
         on_export_tags_changed(db, old_tags, job)
     db.commit()
     db.refresh(job)
@@ -973,7 +991,7 @@ def update_work(work_id: int, body: WorkUpdate, db: Session = Depends(get_db)):
         work.product_id = body.product_id
     if body.tags is not None:
         work.tags = body.tags
-        ensure_tags(db, work.tags)
+        ensure_tags(db, work.tags, work.product_id)
         on_work_tags_changed(db, old_tags, work)
     db.commit()
     db.refresh(work)

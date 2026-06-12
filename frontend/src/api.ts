@@ -8,12 +8,16 @@ export interface TagResourceCounts {
 
 export interface TagInfo {
   name: string
+  product_id: number
+  product_name: string | null
   counts: TagResourceCounts
   videos: number
 }
 
 export interface TagStats {
   name: string
+  product_id: number
+  product_name: string | null
   counts: TagResourceCounts
   videos: number
   total: number
@@ -299,14 +303,24 @@ export const api = {
     request<{ ok: boolean }>(`/api/assets/${id}`, { method: 'DELETE' }),
   getAssetStream: (id: number) => `/api/assets/${id}/stream`,
 
-  listTags: () => request<TagInfo[]>('/api/tags'),
-  createTag: (name: string) =>
-    request<{ name: string }>('/api/tags', {
+  listTags: (opts?: { productId?: number }) => {
+    const params = new URLSearchParams()
+    if (opts?.productId != null) params.set('product_id', String(opts.productId))
+    const qs = params.toString()
+    return request<TagInfo[]>(qs ? `/api/tags?${qs}` : '/api/tags')
+  },
+  createTag: (name: string, productId: number) =>
+    request<TagInfo>('/api/tags', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, product_id: productId }),
     }),
-  listTagStats: () => request<TagStats[]>('/api/tags/stats'),
+  listTagStats: (opts?: { productId?: number }) => {
+    const params = new URLSearchParams()
+    if (opts?.productId != null) params.set('product_id', String(opts.productId))
+    const qs = params.toString()
+    return request<TagStats[]>(qs ? `/api/tags/stats?${qs}` : '/api/tags/stats')
+  },
 
   listShots: (opts?: {
     tag?: string

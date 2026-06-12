@@ -104,16 +104,21 @@ class TagResourceCounts(BaseModel):
 
 class TagCreate(BaseModel):
     name: str = Field(min_length=1, max_length=256)
+    product_id: int
 
 
 class TagOut(BaseModel):
     name: str
+    product_id: int
+    product_name: Optional[str] = None
     counts: TagResourceCounts
     videos: int = 0
 
 
 class TagStatsOut(BaseModel):
     name: str
+    product_id: int
+    product_name: Optional[str] = None
     counts: TagResourceCounts
     videos: int = 0
     total: int

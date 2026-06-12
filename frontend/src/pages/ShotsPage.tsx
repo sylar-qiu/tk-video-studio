@@ -51,13 +51,27 @@ export default function ShotsPage() {
   }, [productFilter, tagFilter, nameFilter])
 
   useEffect(() => {
-    Promise.all([api.listProducts(), api.listTags()])
-      .then(([productList, tagList]) => {
-        setProducts(productList)
-        setTags(tagList)
-      })
-      .catch((e) => setError(String(e)))
+    api.listProducts().then(setProducts).catch((e) => setError(String(e)))
   }, [])
+
+  useEffect(() => {
+    if (!productFilter) {
+      setTags([])
+      setTagFilter('')
+      return
+    }
+    const productId = Number(productFilter)
+    api
+      .listTags({ productId })
+      .then(setTags)
+      .catch((e) => setError(String(e)))
+  }, [productFilter])
+
+  useEffect(() => {
+    if (tagFilter && !tags.some((t) => t.name === tagFilter)) {
+      setTagFilter('')
+    }
+  }, [tagFilter, tags])
 
   useEffect(() => {
     const productId = productFilter ? Number(productFilter) : undefined
@@ -120,7 +134,10 @@ export default function ShotsPage() {
           <select
             className="input"
             value={productFilter}
-            onChange={(e) => setProductFilter(e.target.value)}
+            onChange={(e) => {
+              setProductFilter(e.target.value)
+              setTagFilter('')
+            }}
           >
             <option value="">全部产品 ({totalShots})</option>
             {products.map((p) => (
@@ -134,9 +151,10 @@ export default function ShotsPage() {
           <select
             className="input"
             value={tagFilter}
+            disabled={!productFilter}
             onChange={(e) => setTagFilter(e.target.value)}
           >
-            <option value="">全部标签</option>
+            <option value="">{productFilter ? '全部标签' : '请先选择产品'}</option>
             {tags.map((tag) => (
               <option key={tag.name} value={tag.name}>
                 {tagWithCount(tag.name, tag.videos)}

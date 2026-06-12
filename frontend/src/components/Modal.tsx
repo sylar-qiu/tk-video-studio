@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react'
 import { acquireBodyScrollLock } from '../utils/scrollLock'
 
 interface ModalProps {
@@ -24,6 +24,7 @@ export default function Modal({
 }: ModalProps) {
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const backdropPressedRef = useRef(false)
 
   useEffect(() => {
     if (!open) return
@@ -38,17 +39,30 @@ export default function Modal({
     }
   }, [open, closeOnEscape])
 
+  const handleBackdropMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    backdropPressedRef.current = e.target === e.currentTarget
+  }
+
+  const handleBackdropMouseUp = (e: MouseEvent<HTMLDivElement>) => {
+    if (!closeOnBackdrop) return
+    if (backdropPressedRef.current && e.target === e.currentTarget) {
+      onCloseRef.current()
+    }
+    backdropPressedRef.current = false
+  }
+
   if (!open) return null
 
   return (
     <div
       className="modal-backdrop"
-      onClick={closeOnBackdrop ? onClose : undefined}
+      onMouseDown={handleBackdropMouseDown}
+      onMouseUp={handleBackdropMouseUp}
       role="presentation"
     >
       <div
         className={`modal-panel modal-panel--${size}`}
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

@@ -2739,6 +2739,26 @@ a {
   z-index: 3;
 }
 
+.export-progress-track {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.export-progress-fill {
+  height: 100%;
+  background: #ff6b6b;
+  border-radius: 2px;
+  transition: width 0.35s ease;
+}
+
 .export-icon-badge.project-tag {
   background: rgba(15, 17, 23, 0.85);
   color: #aeb4bf;

@@ -46,7 +46,7 @@ export default function ExportNameModal({
         </ModalFooter>
       }
     >
-      <label className="field">
+      <div className="field">
         <span className="label">视频名称</span>
         <input
           className="input"
@@ -58,7 +58,7 @@ export default function ExportNameModal({
             if (e.key === 'Enter') handleConfirm()
           }}
         />
-      </label>
+      </div>
     </Modal>
   )
 }

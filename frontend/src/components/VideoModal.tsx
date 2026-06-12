@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Modal from './Modal'
+import { toggleHtmlVideoPlayback, useVideoSpacebar } from '../utils/videoKeyboard'
 
 interface VideoModalProps {
   open: boolean
@@ -24,6 +25,8 @@ export default function VideoModal({
 }: VideoModalProps) {
   const [started, setStarted] = useState(autoPlay)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const startedRef = useRef(started)
+  startedRef.current = started
   const showActions = !!(downloadUrl || footer)
 
   useEffect(() => {
@@ -43,6 +46,18 @@ export default function VideoModal({
     setStarted(true)
     void videoRef.current?.play()
   }
+
+  useVideoSpacebar(open && !!url, (e) => {
+    e.preventDefault()
+    const video = videoRef.current
+    if (!video) return
+    if (!startedRef.current && !autoPlay) {
+      handleStartPlay()
+      return
+    }
+    toggleHtmlVideoPlayback(video)
+    setStarted(true)
+  })
 
   return (
     <Modal open={open} title={title} onClose={onClose} size="video">

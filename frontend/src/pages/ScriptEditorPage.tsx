@@ -349,16 +349,14 @@ export default function ScriptEditorPage() {
   }, [])
 
   const loadMeta = useCallback(async () => {
-    const [n, tracks, productList, tagList] = await Promise.all([
+    const [n, tracks, productList] = await Promise.all([
       api.getNextExportName(),
       api.listBgmTracks(),
       api.listProducts(),
-      api.listTags(),
     ])
     setNextExportName(n.name)
     setBgmTracks(tracks)
     setProducts(productList)
-    setTags(tagList)
   }, [])
 
   const loadPickerShots = useCallback(async () => {
@@ -460,6 +458,25 @@ export default function ScriptEditorPage() {
   }, [loadPickerShots, loading])
 
   useEffect(() => {
+    if (!productFilter) {
+      setTags([])
+      setTagFilter('')
+      return
+    }
+    const productId = Number(productFilter)
+    api
+      .listTags({ productId })
+      .then(setTags)
+      .catch(() => setTags([]))
+  }, [productFilter])
+
+  useEffect(() => {
+    if (tagFilter && !tags.some((t) => t.name === tagFilter)) {
+      setTagFilter('')
+    }
+  }, [tagFilter, tags])
+
+  useEffect(() => {
     const productId = productFilter ? Number(productFilter) : undefined
     api
       .listShotNames({ productId, tag: tagFilter || undefined })
@@ -484,10 +501,12 @@ export default function ScriptEditorPage() {
 
   useEffect(() => {
     if (!activeProjectId) return
-    const ms = hasProcessingJobs ? 2000 : 10000
-    const timer = window.setInterval(() => {
+    const poll = () => {
       loadProjectExports(activeProjectId).catch(() => {})
-    }, ms)
+    }
+    poll()
+    const ms = hasProcessingJobs ? 1500 : 10000
+    const timer = window.setInterval(poll, ms)
     return () => window.clearInterval(timer)
   }, [activeProjectId, hasProcessingJobs, loadProjectExports])
 
@@ -778,8 +797,9 @@ export default function ScriptEditorPage() {
     setExporting(true)
     setError('')
     try {
-      await api.createExport(name, currentProject.id, timelineToItems(timeline))
+      const job = await api.createExport(name, currentProject.id, timelineToItems(timeline))
       setExportModalOpen(false)
+      setJobs((prev) => [job, ...prev.filter((j) => j.id !== job.id)])
       const n = await api.getNextExportName()
       setNextExportName(n.name)
       await loadProjectExports(currentProject.id)
@@ -803,10 +823,11 @@ export default function ScriptEditorPage() {
         const suffix = String(i + 1).padStart(pad, '0')
         const exportName =
           batchPlan.videoCount === 1 ? baseName : `${baseName}-${suffix}`
-        await api.createExport(exportName, currentProject.id, batchPlan.itemsList[i])
+        const job = await api.createExport(exportName, currentProject.id, batchPlan.itemsList[i])
+        setJobs((prev) => [job, ...prev.filter((j) => j.id !== job.id)])
         setBatchProgress({ done: i + 1, total: batchPlan.videoCount })
+        await loadProjectExports(currentProject.id)
       }
-      await loadProjectExports(currentProject.id)
     } catch (e) {
       setError(String(e))
     } finally {
@@ -854,6 +875,11 @@ export default function ScriptEditorPage() {
     if (job.status !== 'done') {
       if (job.status === 'processing') return `合成中 ${Math.round(job.progress * 100)}%`
       if (job.status === 'pending') return '排队中'
+      if (job.status === 'failed') {
+        const msg = job.error?.trim()
+        if (!msg) return '合成失败'
+        return msg.length > 24 ? `失败：${msg.slice(0, 24)}…` : `失败：${msg}`
+      }
       return job.status
     }
     if (job.work_status === 'approved' || job.work_status === 'pending') return '已发布'
@@ -879,9 +905,20 @@ export default function ScriptEditorPage() {
         hideCardMeta
       >
         {job.status !== 'done' && exportWorkBadge(job) && (
-          <span className={`export-icon-badge status ${job.status}`}>
+          <span
+            className={`export-icon-badge status ${job.status}`}
+            title={job.status === 'failed' ? job.error || undefined : undefined}
+          >
             {exportWorkBadge(job)}
           </span>
+        )}
+        {(job.status === 'pending' || job.status === 'processing') && (
+          <div className="export-progress-track" aria-hidden>
+            <div
+              className="export-progress-fill"
+              style={{ width: `${Math.max(4, Math.round(job.progress * 100))}%` }}
+            />
+          </div>
         )}
       </VideoPreview>
       <ExportRelativeTime createdAt={job.created_at} />
@@ -932,9 +969,18 @@ export default function ScriptEditorPage() {
                     ? 'status done'
                     : ''
             }`}
+            title={job.status === 'failed' ? job.error || undefined : undefined}
           >
             {exportWorkBadge(job)}
           </span>
+        )}
+        {(job.status === 'pending' || job.status === 'processing') && (
+          <div className="export-progress-track" aria-hidden>
+            <div
+              className="export-progress-fill"
+              style={{ width: `${Math.max(4, Math.round(job.progress * 100))}%` }}
+            />
+          </div>
         )}
       </VideoPreview>
       {canPublishExport(job) && (
@@ -1339,7 +1385,10 @@ export default function ScriptEditorPage() {
             <div className="shots-library-filter">
               <FilterSelect
                 value={productFilter}
-                onChange={setProductFilter}
+                onChange={(value) => {
+                  setProductFilter(value)
+                  setTagFilter('')
+                }}
                 options={[
                   {
                     value: '',
@@ -1376,10 +1425,11 @@ export default function ScriptEditorPage() {
               <FilterSelect
                 value={tagFilter}
                 onChange={setTagFilter}
+                disabled={!productFilter}
                 options={[
                   {
                     value: '',
-                    label: '全部标签',
+                    label: productFilter ? '全部标签' : '请先选择产品',
                     selectedCount: pickerSelectedCounts.total,
                   },
                   ...tags.map((tag) => ({

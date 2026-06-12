@@ -111,7 +111,10 @@ export default function EditResourceMetaModal({
             className={`input${productInherited ? ' input-inherited-product' : ''}`}
             value={pid}
             disabled={busy}
-            onChange={(e) => setPid(e.target.value)}
+            onChange={(e) => {
+              setPid(e.target.value)
+              setSelectedTags([])
+            }}
           >
             <option value="">未指定</option>
             {products.map((p) => (
@@ -134,7 +137,12 @@ export default function EditResourceMetaModal({
             />
           </label>
         )}
-        <TagSelect value={selectedTags} onChange={setSelectedTags} disabled={busy} />
+        <TagSelect
+          value={selectedTags}
+          onChange={setSelectedTags}
+          productId={pid === '' ? null : Number(pid)}
+          disabled={busy}
+        />
         {error && <p className="error modal-form-error">{error}</p>}
       </div>
       {ConfirmDialog}

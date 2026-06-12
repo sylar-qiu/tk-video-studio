@@ -7,6 +7,7 @@ import ResourceMetaBreadcrumb from '../components/ResourceMetaBreadcrumb'
 import { useConfirm } from '../hooks/useConfirm'
 import { api, formatDuration, type Asset, type Product, type Shot } from '../api'
 import { findOverlappingShots } from '../utils/shotRange'
+import { isSpaceKey, isTypingTarget, toggleHtmlVideoPlayback } from '../utils/videoKeyboard'
 import { thumbImageClass } from '../utils/thumb'
 
 export default function ClipPage() {
@@ -76,7 +77,14 @@ export default function ClipPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (isTypingTarget(e.target)) return
+      if (isSpaceKey(e)) {
+        if (document.querySelector('.modal-backdrop')) return
+        e.preventDefault()
+        const v = videoRef.current
+        if (v) toggleHtmlVideoPlayback(v)
+        return
+      }
       if (e.key === 'i' || e.key === 'I') {
         e.preventDefault()
         setInPoint()
@@ -86,8 +94,8 @@ export default function ClipPage() {
         setOutPoint()
       }
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('keydown', handler, true)
+    return () => window.removeEventListener('keydown', handler, true)
   }, [setInPoint, setOutPoint])
 
   const extract = async () => {
@@ -211,7 +219,10 @@ export default function ClipPage() {
               className="input input-inherited-product"
               value={productId}
               disabled={loading}
-              onChange={(e) => setProductId(e.target.value)}
+              onChange={(e) => {
+                setProductId(e.target.value)
+                setSelectedTags([])
+              }}
             >
               <option value="">请选择产品</option>
               {products.map((p) => (
@@ -226,6 +237,7 @@ export default function ClipPage() {
           <TagSelect
             value={selectedTags}
             onChange={setSelectedTags}
+            productId={productId ? Number(productId) : null}
             disabled={loading}
           />
 

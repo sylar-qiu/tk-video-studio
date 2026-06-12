@@ -301,6 +301,49 @@ def _seed_bgm_library_once() -> None:
     marker.touch()
 
 
+def _migrate_tags_product_scope_once() -> None:
+    """Recreate tags table with product_id scope and rebuild stats."""
+    from config import DATA_DIR
+    from models import Tag
+    from services.resource_stats import rebuild_all_stats
+
+    marker = DATA_DIR / ".tags_product_scope_v1"
+    if marker.exists():
+        return
+
+    with engine.begin() as conn:
+        insp = inspect(conn)
+        if "tags" in insp.get_table_names():
+            cols = {c["name"] for c in insp.get_columns("tags")}
+            if "product_id" not in cols:
+                conn.execute(text("""
+                    CREATE TABLE tags_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+                        name VARCHAR(256) NOT NULL,
+                        count_assets INTEGER DEFAULT 0,
+                        count_shots INTEGER DEFAULT 0,
+                        count_exports INTEGER DEFAULT 0,
+                        count_works INTEGER DEFAULT 0,
+                        count_products INTEGER DEFAULT 0,
+                        created_at DATETIME,
+                        UNIQUE(product_id, name)
+                    )
+                """))
+                conn.execute(text("DROP TABLE tags"))
+                conn.execute(text("ALTER TABLE tags_new RENAME TO tags"))
+
+    db = SessionLocal()
+    try:
+        db.query(Tag).delete()
+        db.commit()
+        rebuild_all_stats(db)
+    finally:
+        db.close()
+
+    marker.touch()
+
+
 def run_migrations() -> None:
     Base.metadata.create_all(bind=engine)
 
@@ -350,6 +393,7 @@ def run_migrations() -> None:
         _reextract_shots_truncated_video_once()
         _seed_bgm_library_once()
         _seed_tag_library_once()
+        _migrate_tags_product_scope_once()
         _rebuild_resource_stats_once()
     finally:
         db.close()

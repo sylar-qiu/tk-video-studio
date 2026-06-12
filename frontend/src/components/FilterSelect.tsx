@@ -11,11 +11,12 @@ interface Props {
   value: string
   onChange: (value: string) => void
   options: FilterSelectOption[]
+  disabled?: boolean
 }
 
 const MENU_MAX_HEIGHT = 280
 
-export default function FilterSelect({ value, onChange, options }: Props) {
+export default function FilterSelect({ value, onChange, options, disabled = false }: Props) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -97,7 +98,10 @@ export default function FilterSelect({ value, onChange, options }: Props) {
         className="filter-select-trigger input"
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((prev) => !prev)}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) setOpen((prev) => !prev)
+        }}
       >
         <span className="filter-select-trigger-label">{selected?.label ?? ''}</span>
         {selected && selected.selectedCount > 0 && (
