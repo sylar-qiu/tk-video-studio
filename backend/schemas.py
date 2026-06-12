@@ -55,6 +55,7 @@ class ProductStats(BaseModel):
     shots: int = 0
     exports: int = 0
     works: int = 0
+    tags: int = 0
 
 
 class ProductOut(BaseModel):

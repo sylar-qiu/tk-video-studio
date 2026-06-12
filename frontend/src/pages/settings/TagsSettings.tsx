@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import StatLink from '../../components/StatLink'
 import { resourceFilterUrl } from '../../utils/resourceNav'
@@ -32,6 +32,11 @@ export default function TagsSettings() {
     void load()
   }, [load])
 
+  const totalTagCount = useMemo(
+    () => products.reduce((sum, p) => sum + (p.stats.tags ?? 0), 0),
+    [products],
+  )
+
   return (
     <section className="card settings-section">
       <h2>标签管理</h2>
@@ -46,10 +51,10 @@ export default function TagsSettings() {
           value={productFilter}
           onChange={(e) => setProductFilter(e.target.value)}
         >
-          <option value="">全部产品</option>
+          <option value="">全部产品 ({totalTagCount})</option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {p.name} ({p.stats.tags ?? 0})
             </option>
           ))}
         </select>

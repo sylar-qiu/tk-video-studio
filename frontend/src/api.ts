@@ -109,6 +109,7 @@ export interface ProductStats {
   shots: number
   exports: number
   works: number
+  tags: number
 }
 
 export interface Product {

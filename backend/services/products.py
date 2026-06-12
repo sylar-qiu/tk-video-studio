@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Asset, ExportJob, Product, ProductCategory, Shot, Work
+from models import Asset, ExportJob, Product, ProductCategory, Shot, Tag, Work
 from schemas import CategoryOut, ProductOut, ProductStats
 
 
@@ -54,6 +54,7 @@ def product_stats(db: Session, product_id: int) -> ProductStats:
         shots=db.query(func.count(Shot.id)).filter(Shot.product_id == product_id).scalar() or 0,
         exports=db.query(func.count(ExportJob.id)).filter(ExportJob.product_id == product_id).scalar() or 0,
         works=db.query(func.count(Work.id)).filter(Work.product_id == product_id).scalar() or 0,
+        tags=db.query(func.count(Tag.id)).filter(Tag.product_id == product_id).scalar() or 0,
     )
 
 
